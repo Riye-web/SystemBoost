@@ -137,9 +137,10 @@ export const DEPOSIT_GUIDE = {
 };
 export const DEPOSIT_HOURS = 24, DEPOSIT_WARN_HOURS = 20;
 
-// Article 9 of the licence agreement, word for word (app/SystemBoost.App/Assets/eula.txt, eula.en.txt; an item that
-// runs over two lines there is one string here, joined with a space). When the agreement changes, change this too:
-// test_support.mjs compares the two.
+// Article 9 of the licence agreement, word for word (app/SystemBoost.App/Assets/eula.txt; an item that runs over two
+// lines there is one string here, joined with a space). When the agreement changes, change this too: test_support.mjs
+// compares the Korean text with eula.txt. The agreement is Korean only; "en" is the English /help page's own wording,
+// no longer checked against a translation file.
 export const ARTICLE_9 = {
   ko: { title: "제9조 (구매와 청약철회)", items: [
     "1. 사용자는 키를 받은 날부터 7일 이내에 청약을 철회할 수 있습니다.",
@@ -158,7 +159,7 @@ export const ARTICLE_9 = {
 };
 
 // Shown when the dashboard has no FAQ of its own. Every answer comes from README.md, the licence agreement
-// (eula.txt / eula.en.txt) or the app's own strings (menu names as the app writes them, lang.en.json for English).
+// (eula.txt) or the app's own strings (menu names as the app writes them).
 export const DEFAULT_FAQ = {
   ko: [
     { q: "라이선스 키는 어디에 넣나요?",
@@ -950,33 +951,30 @@ export async function privacyPage(url, env) {
     "x-frame-options": "DENY", "referrer-policy": "no-referrer", "x-content-type-options": "nosniff" } });
 }
 
-// GET /terms. The licence agreement as the app shows it, made from the app's eula.txt / eula.en.txt by build_terms.mjs
-// (static, no script, nothing filled in). It is on the sales page (/help links to it) so a change can be announced
+// GET /terms. The licence agreement as the app shows it, made from the app's eula.txt by build_terms.mjs
+// (static, no script, nothing filled in). Korean only: ?lang=en shows the same Korean page. It is on the sales page (/help links to it) so a change can be announced
 // there 30 days ahead (EULA Article 13).
 // Below the agreement (outside its text) the seller's identity from 고객센터 설정, as /help shows it: only the fields
 // filled in, each escaped; "not entered yet" when none is.
 export const SELLER_LABELS = {
   ko: { title: "판매자 정보", empty: "판매자가 아직 입력하지 않았어요",
         name: "상호", rep: "대표자", address: "주소", bizNo: "사업자등록번호", mailOrderNo: "통신판매업 신고번호", email: "메일", phone: "전화", hours: "문의 받는 시간" },
-  en: { title: "Seller", empty: "Not entered by the seller yet",
-        name: "Business name", rep: "Representative", address: "Address", bizNo: "Business registration no.", mailOrderNo: "Mail-order business no.", email: "Email", phone: "Phone", hours: "Support hours" },
 };
 const TERMS_SELLER_CSS = ".seller{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:32px 0 0;font-size:14px}" +
   ".seller dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:8px 0 0}.seller dt{color:var(--muted)}.seller dd{margin:0}\n";
 /** The filled-in seller fields, trimmed, in SELLER_FIELDS order. */
 export const sellerFilled = c => Object.fromEntries(SELLER_FIELDS.map(f => [f, String(c?.seller?.[f] ?? "").trim()]).filter(([, v]) => v));
-export function sellerBlock(c, lang) {
-  const L = SELLER_LABELS[lang], s = sellerFilled(c);
+export function sellerBlock(c) {
+  const L = SELLER_LABELS.ko, s = sellerFilled(c);
   const rows = Object.entries(s).map(([f, v]) => "<dt>" + escHtml(L[f]) + "</dt><dd>" + escHtml(v) + "</dd>").join("");
   return '<footer class="seller" id="seller" aria-label="' + escHtml(L.title) + '"><b>' + escHtml(L.title) + "</b>" +
          (rows ? "<dl>" + rows + "</dl>" : '<p class="lead">' + escHtml(L.empty) + "</p>") + "</footer>\n";
 }
 export async function termsPage(url, env) {
-  const lang = lang2(url.searchParams.get("lang"));
   const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
   let c = null;
   try { c = await supportConfig(env); } catch { /* the agreement still shows */ }
-  const page = TERMS_HTML[lang].replace("</style>", () => TERMS_SELLER_CSS + "</style>").replace("</main>", () => "</main>\n" + sellerBlock(c, lang));
+  const page = TERMS_HTML.replace("</style>", () => TERMS_SELLER_CSS + "</style>").replace("</main>", () => "</main>\n" + sellerBlock(c));
   return new Response(page.replaceAll("__NONCE__", nonce), { headers: {
     "content-type": "text/html; charset=utf-8", "cache-control": "no-store",
     "content-security-policy": `default-src 'none'; style-src 'nonce-${nonce}'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,

@@ -56,10 +56,10 @@ for (const m of ["POST", "PUT", "DELETE"]) {
 kv.set("config:support", "not json");
 assert.deepEqual(await (await call("/seller")).json(), {}, "a broken config: {}");
 
-// ---- /terms: the seller block outside the agreement text, empty rows hidden, escaped, both languages
+// ---- /terms: the seller block outside the agreement text, empty rows hidden, escaped; Korean also under ?lang=en
 setSeller({ name: "Riye <b>Shop</b>", rep: "Riye", address: "", phone: "", email: "help@example.com", bizNo: "", mailOrderNo: "", hours: "" });
 for (const [path, labels, missing, title] of [["/terms", ["상호", "대표자", "메일"], ["주소", "전화", "사업자등록번호", "통신판매업 신고번호", "문의 받는 시간"], "판매자 정보"],
-                                               ["/terms?lang=en", ["Business name", "Representative", "Email"], ["Address", "Phone", "Business registration no.", "Mail-order business no.", "Support hours"], "Seller"]]) {
+                                               ["/terms?lang=en", ["상호", "대표자", "메일"], ["주소", "전화", "사업자등록번호", "통신판매업 신고번호", "문의 받는 시간"], "판매자 정보"]]) {
   r = await call(path);
   const html = await r.text();
   assert.equal(r.status, 200);

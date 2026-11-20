@@ -36,7 +36,7 @@ export { Stats } from "./stats.js";
 //   /support/*, GET /help        customer support and refund requests (src/support.js, src/help_page.js)
 //   GET  /privacy                the privacy policy (?lang=en: an English summary), src/privacy_page.js; before accounts v2
 //                                start (ACCOUNTS_V2_FROM) the policy of then, src/privacy_prev_page.js, and ?next=1 the new one
-//   GET  /terms                  the licence agreement as the app shows it (?lang=en: the reference translation), src/terms_page.js
+//   GET  /terms                  the licence agreement as the app shows it, Korean only (?lang=en: the same page), src/terms_page.js
 //   GET  /admin                  owner dashboard (HTML); its API is /admin/api/* with
 //                                "Authorization: Bearer <ADMIN_TOKEN>"
 //

@@ -153,8 +153,8 @@ assert.deepEqual(Object.values(info.seller), ["", "", "", "", "", "", "", ""], "
 assert.match(info.policy.title, /제9조/);
 assert.equal(info.policy.items.length, 5);
 // ARTICLE_9 is Article 9 of the licence agreement word for word: the heading, and each numbered item with its
-// continuation lines joined by a space ("! " only marks a bold line in the app)
-for (const [lang, file] of [["ko", "eula.txt"], ["en", "eula.en.txt"]]) {
+// continuation lines joined by a space ("! " only marks a bold line in the app). The agreement is Korean only.
+for (const [lang, file] of [["ko", "eula.txt"]]) {
   const lines = readFileSync(new URL("../../app/SystemBoost.App/Assets/" + file, import.meta.url), "utf8").split(/\r?\n/);
   const at = lines.findIndex(l => /^## (제9조|Article 9 )/.test(l)), items = [];
   assert.ok(at > 0, file + ": Article 9");

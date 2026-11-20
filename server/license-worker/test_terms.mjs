@@ -2,7 +2,7 @@
 // announced on the sales page and in the app 30 days before it is in force).
 //   node test_terms.mjs
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { generateKeyPairSync } from "node:crypto";
 import worker from "./src/index.js";
 import { fakeStats } from "./fake_stats.mjs";
@@ -23,13 +23,14 @@ const eula = name => readFileSync(new URL("../../app/SystemBoost.App/Assets/" + 
 
 // 1. the module is made from the app's own files
 assert.equal(build(), readFileSync(new URL("./src/terms_page.js", import.meta.url), "utf8").replace(/\r\n/g, "\n"),
-             "src/terms_page.js is up to date with the app's eula.txt, eula.en.txt and Eula.Version (run node build_terms.mjs)");
+             "src/terms_page.js is up to date with the app's eula.txt and Eula.Version (run node build_terms.mjs)");
 assert.match(version(), /^\d{4}-\d{2}-\d{2}$/);
 const purchaseNote = readFileSync(new URL("./src/purchase_note.js", import.meta.url), "utf8");
 assert.ok(purchaseNote.includes('"' + version() + '"'), "the /thanks page quotes the same agreement version");
 
-// 2. the page: every line of the Korean agreement, escaped, no script
-for (const [path, file, lang, art13] of [["/terms", "eula.txt", "ko", "제13조 (계약의 변경)"], ["/terms?lang=en", "eula.en.txt", "en", "Article 13"]]) {
+// 2. the page: every line of the Korean agreement, escaped, no script. Korean only: ?lang=en shows the same page.
+assert.ok(!existsSync(new URL("../../app/SystemBoost.App/Assets/eula.en.txt", import.meta.url)), "no English agreement in the app");
+for (const [path, file, lang, art13] of [["/terms", "eula.txt", "ko", "제13조 (계약의 변경)"], ["/terms?lang=en", "eula.txt", "ko", "제13조 (계약의 변경)"]]) {
   const r = await get(path), html = await r.text();
   assert.equal(r.status, 200, path);
   assert.equal(r.headers.get("content-type"), "text/html; charset=utf-8");
@@ -47,6 +48,7 @@ for (const [path, file, lang, art13] of [["/terms", "eula.txt", "ko", "제13조 
     assert.ok(html.includes(esc(text)), path + " shows every line of " + file + ": " + text.slice(0, 40));
   }
   assert.equal((html.match(/<h2 id="a\d+">/g) || []).length, (eula(file).match(/^## /gm) || []).length, "one heading per article");
+  assert.ok(!/hreflang|lang=en|English|Article \d/.test(html), path + ": no English version, no link to one");
 }
 assert.ok((await (await get("/terms")).text()).includes("2027년 1월 1일"), "the date of the coming change is on the page");
 
