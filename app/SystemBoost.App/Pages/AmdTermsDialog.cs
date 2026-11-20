@@ -6,7 +6,7 @@
 //               and has the focus; Enter never agrees (OverclockConsentDialog.GuardEnter); the X and Esc are '취소'.
 //   ask: false  '조건 보기': the same text, how the consent stands, and '닫기'.
 // The article is read from the agreement shipped in the app at run time (AmdTerms.Text: from its "## " heading to the
-// next one), the Korean text, or its reference translation when the screen is in English, as the agreement window does.
+// next one) of the Korean text, as the agreement window does.
 // AmdTermsWithdrawDialog below: '동의 철회' asks once, the same way ('취소' first, Enter never withdraws).
 using System;
 using System.Diagnostics;
@@ -152,8 +152,6 @@ public sealed class AmdTermsDialog : Window
             p.Children.Add(missing);
             return p;
         }
-        // the screen is in English: eula.en.txt, whose first line says the Korean text governs
-        if (Lang.Translating) p.Children.Add(Ui.Text("참고 번역이에요. 계약은 한국어 원문이 기준이에요.", "muted", wrap: true));
         foreach (var line in article)
         {
             if (line.Length == 0) continue;

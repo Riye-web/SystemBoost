@@ -54,8 +54,7 @@ public static partial class AmdTerms
         lock (Gate) _agreed = null;
     }
 
-    /// Article 12-2 in the screen's language (the Korean text is the agreement; the English one is its reference
-    /// translation, as the licence agreement window shows it). Empty when it could not be read.
+    /// Article 12-2 of the Korean agreement, as the licence agreement window shows it. Empty when it could not be read.
     public static IReadOnlyList<string> Text()
     {
         try { return Section(Eula.Lines()); }
@@ -66,7 +65,7 @@ public static partial class AmdTerms
     public static string Standing()
     {
         if (Latest(OcConsent.Store.Load()) is not { } last) return "아직 이 조건에 동의하지 않았어요.";
-        var when = last.AtUtc is DateTime t ? t.ToLocalTime().ToString(Lang.Translating ? "yyyy-MM-dd HH:mm" : "yyyy년 M월 d일 HH:mm") : last.At;
+        var when = last.AtUtc is DateTime t ? t.ToLocalTime().ToString("yyyy년 M월 d일 HH:mm") : last.At;
         if (last.Withdrawn) return $"{when}에 동의를 철회했어요.";
         return $"{when}에 이 조건에 동의했어요.";
     }

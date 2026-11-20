@@ -68,7 +68,7 @@ public sealed class EulaDialog : Window
     }
 
     private static string AcceptedLine() =>
-        Eula.AcceptedAt is { } at ? $"{at.LocalDateTime.ToString(Lang.Translating ? "yyyy-MM-dd HH:mm" : "yyyy년 M월 d일 HH:mm")}에 이 계약에 동의했어요."
+        Eula.AcceptedAt is { } at ? $"{at.LocalDateTime.ToString("yyyy년 M월 d일 HH:mm")}에 이 계약에 동의했어요."
                                   : "이 PC에 동의 기록이 없어요.";
 
     private static Control Summary()

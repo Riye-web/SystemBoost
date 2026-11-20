@@ -1,7 +1,6 @@
 // The overclocking & power limit notice, word for word as the owner wrote it, and its version.
 // A new wording gets a new Version: a consent given to another version is asked again (OcConsent.Needs).
-// The screen shows the Korean lines; Assets/lang.en.json maps each of them to the English line below it
-// (the GPU tests check that it does). Shown by Pages/OverclockConsentDialog.cs.
+// The screen shows these Korean lines (the app is Korean only). Shown by Pages/OverclockConsentDialog.cs.
 // No Avalonia here: the GPU tests link this file.
 namespace SystemBoost.App.Services;
 
@@ -28,18 +27,6 @@ public static class OverclockNotice
         new[] { Risk, Damage },
         new[] { Recovery },
         new[] { Responsibility, Exclusion },
-    };
-
-    /// The owner's English text, line for line (lang.en.json carries the same under the Korean keys).
-    public static readonly (string Korean, string English)[] English =
-    {
-        (Headline, "Overclocking & Power Limit Notice"),
-        (Risk, "Overclocking and changing the power limit run your graphics card beyond the manufacturer's default settings."),
-        (Damage, "This may cause system instability, game crashes, higher temperatures, shorter component lifespan, or hardware damage, and may void your GPU or PC manufacturer's warranty."),
-        (Recovery, "SystemBoost provides temperature monitoring and automatic recovery, but cannot prevent every problem."),
-        (Responsibility, "You are solely responsible for choosing to enable these features and for any results of using them."),
-        (Exclusion, "This does not apply to damage caused by SystemBoost's intentional misconduct or gross negligence."),
-        (Agreement, "I have read and understood the above and agree to use these features at my own risk."),
     };
 
     /// What a tuning write answers without a consent to this version for this card (nothing changed).

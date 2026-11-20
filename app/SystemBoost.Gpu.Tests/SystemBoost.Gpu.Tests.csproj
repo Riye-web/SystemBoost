@@ -23,11 +23,7 @@
     <Compile Include="../SystemBoost.App/Services/AmdTerms.cs" Link="App/AmdTerms.cs" />
     <!-- built without SbAdlx, like the release: DriverFeatures is false here (OffBuildTests.cs) -->
     <Compile Include="../SystemBoost.App/Services/Gpu/AmdBuild.cs" Link="App/AmdBuild.cs" />
-    <!-- the English entries of the notice are checked against OverclockNotice.English -->
-    <None Include="../SystemBoost.App/Assets/lang.en.json" Link="lang.en.json" CopyToOutputDirectory="PreserveNewest" />
-    <!-- Article 12-2 as the agreement shipped in the app has it, and the English of the texts for its consent (AmdTermsTests.cs) -->
+    <!-- Article 12-2 as the agreement shipped in the app has it (AmdTermsTests.cs) -->
     <None Include="../SystemBoost.App/Assets/eula.txt" Link="eula.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../SystemBoost.App/Assets/eula.en.txt" Link="eula.en.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../../docs/amd-consent/lang-amd-consent.json" Link="lang-amd-consent.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

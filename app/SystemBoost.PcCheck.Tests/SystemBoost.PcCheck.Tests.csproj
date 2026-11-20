@@ -13,6 +13,5 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../SystemBoost.App/Services/PcCheck/Pure/**/*.cs" Link="App/PcCheck/%(RecursiveDir)%(Filename)%(Extension)" />
-    <None Include="../SystemBoost.App/Assets/lang.en.json" Link="lang.en.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

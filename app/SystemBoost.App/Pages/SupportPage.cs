@@ -22,7 +22,7 @@ public sealed class SupportPage : UserControl
 
     // The required items: what is kept, why, for how long, and what refusing means. Must match the retention in
     // server/license-worker (/support/ticket) and the consent text of /help. The optional items (contact, app
-    // details) are explained next to their own fields, not here. One line per entry in lang.en.json.
+    // details) are explained next to their own fields, not here.
     private static readonly string[] ConsentLines =
     {
         "보내면 보관하는 필수 항목: 문의 종류, 제목, 내용, 판매자의 답, 동의한 시각, 로그인 중이면 회원 아이디, 환불 요청이면 키 식별 번호와 주문 코드.",

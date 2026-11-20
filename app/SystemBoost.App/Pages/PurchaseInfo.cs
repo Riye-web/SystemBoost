@@ -6,7 +6,7 @@
 //   BeforePaying()  ★ 플랜, in the buy card above the pay button
 //   Receipt(...)    KeyDialog, once a key arrived: a purchase confirmation to copy or save
 //   Seller(...)     the seller's details as rows (고객센터 → 판매자 정보 uses it too)
-// Every Korean line here has an entry in Assets/lang.en.json; the copied or saved text goes through Lang.T.
+// The screen and the copied or saved text are Korean only.
 using System;
 using System.Collections.Generic;
 using System.Linq;

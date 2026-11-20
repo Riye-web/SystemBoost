@@ -21,8 +21,8 @@ public sealed record SupportSeller(string Name = "", string Rep = "", string Add
         return new SupportSeller(F("name"), F("rep"), F("address"), F("bizNo"), F("mailOrderNo"), F("email"), F("phone"), F("hours"));
     }
 
-    /// Only the fields the seller filled in, trimmed, labelled as on 고객센터 and /help (the labels are Korean source
-    /// strings with entries in Assets/lang.en.json). An empty field gets no row.
+    /// Only the fields the seller filled in, trimmed, labelled as on 고객센터 and /help (Korean labels).
+    /// An empty field gets no row.
     public List<(string Label, string Value)> Rows()
     {
         var rows = new List<(string, string)>();

@@ -355,9 +355,44 @@ internal static class Program
         // the /support/info "seller" object parses the same as GET /seller's body
         Same(full, SupportSeller.Parse(J("""{"name":"N","rep":"R","address":"A","bizNo":"B","mailOrderNo":"M","email":"e@x","phone":"P","hours":"H","notice":"n"}""")), "same record");
 
-        // every label has an English entry
-        var en = JsonSerializer.Deserialize<Dictionary<string, string>>(System.IO.File.ReadAllText(System.IO.Path.Combine(AppContext.BaseDirectory, "lang.en.json")))!;
-        foreach (var (label, _) in full.Rows()) Check(en.ContainsKey(label), $"lang.en.json has [{label}]");
-        Check(en.ContainsKey("SystemBoost는 대한민국에서만 판매해요."), "lang.en.json has the Korea-only notice");
+        // the screen is Korean only: the labels and the Korea-only notice are shown as they are
+        foreach (var (label, _) in full.Rows()) Same(label, Lang.T(label), $"[{label}] stays Korean");
+        Same("SystemBoost는 대한민국에서만 판매해요.", Lang.T("SystemBoost는 대한민국에서만 판매해요."), "the Korea-only notice stays Korean");
+        KoreanOnly();
+    }
+
+    // SystemBoost is sold in Korea only: one screen language, no English assets, no language choice.
+    private static void KoreanOnly()
+    {
+        Same("ko", Lang.Code, "the screen language is Korean");
+        Same("ko", Lang.Korean, "Korean is ko");
+        var app = FindApp();
+        Check(app != null, "app/SystemBoost.App found above the test output");
+        if (app == null) return;
+        var assets = System.IO.Path.Combine(app, "Assets");
+        Same(0, System.IO.Directory.GetFiles(assets, "lang.*.json").Length, "no translation file in Assets");
+        Check(!System.IO.File.Exists(System.IO.Path.Combine(assets, "eula.en.txt")), "no English licence agreement in Assets");
+        Check(System.IO.File.Exists(System.IO.Path.Combine(assets, "eula.txt")), "the Korean licence agreement is in Assets");
+        var csproj = System.IO.File.ReadAllText(System.IO.Path.Combine(app, "SystemBoost.App.csproj"));
+        Check(!csproj.Contains("lang.en") && !csproj.Contains("eula.en"), "the app project packs no English asset");
+        // a language.txt saying "en" from an earlier version, or an English Windows, cannot switch the screen:
+        // Lang reads neither
+        var lang = System.IO.File.ReadAllText(System.IO.Path.Combine(app, "Services", "Lang.cs"));
+        Check(!lang.Contains("language.txt\")") && !lang.Contains("File.") && !lang.Contains("CultureInfo"), "Lang reads no saved choice and no OS language");
+        Check(!System.IO.File.Exists(System.IO.Path.Combine(app, "Pages", "LanguageBar.cs")), "no language picker");
+        var eula = System.IO.File.ReadAllText(System.IO.Path.Combine(app, "Services", "Eula.cs"));
+        Check(eula.Contains("\"avares://SystemBoost/Assets/eula.txt\"") && !eula.Contains(".en"), "the agreement window reads eula.txt only");
+    }
+
+    private static string? FindApp()
+    {
+        for (var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory); dir != null; dir = dir.Parent)
+        {
+            var candidate = System.IO.Path.Combine(dir.FullName, "app", "SystemBoost.App");
+            if (System.IO.Directory.Exists(candidate)) return candidate;
+            candidate = System.IO.Path.Combine(dir.FullName, "SystemBoost.App");
+            if (System.IO.File.Exists(System.IO.Path.Combine(candidate, "SystemBoost.App.csproj"))) return candidate;
+        }
+        return null;
     }
 }

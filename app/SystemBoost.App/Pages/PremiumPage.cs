@@ -699,11 +699,9 @@ public sealed class PremiumPage : UserControl
     private void AskDeposit(string code, string payer)
     {
         var plan = License.PendingOrders.FirstOrDefault(o => o.Code == code) is { Plan.Length: > 0 } o ? PlanLabel(o.Plan) : "";
-        // what the buyer sends, in the screen's language (a TextBox is not translated)
-        var text = Lang.Translating
-            ? $"I have paid for order {code}" + (plan.Length > 0 ? $" ({Lang.T(plan)})" : "") + "." + (payer.Length > 0 ? $" Payer name: {payer}." : "") + " Please check it."
-            : $"주문 코드 {code}" + (plan.Length > 0 ? $" ({plan})" : "") + "의 금액을 입금했어요." + (payer.Length > 0 ? $" 입금자명은 {payer}예요." : "") + " 확인 부탁드려요.";
-        SupportPage.RequestDeposit(new SupportPage.Prefill(code, (Lang.Translating ? "Payment sent · " : "입금 확인 · ") + code, text));
+        // what the buyer sends
+        var text = $"주문 코드 {code}" + (plan.Length > 0 ? $" ({plan})" : "") + "의 금액을 입금했어요." + (payer.Length > 0 ? $" 입금자명은 {payer}예요." : "") + " 확인 부탁드려요.";
+        SupportPage.RequestDeposit(new SupportPage.Prefill(code, "입금 확인 · " + code, text));
     }
 
     private void Refresh()

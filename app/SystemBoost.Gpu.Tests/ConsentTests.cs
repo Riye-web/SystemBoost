@@ -1,5 +1,5 @@
 // The consent to the overclocking notice (OcConsent, OverclockNotice): when it is asked, consents.json, the server hook,
-// the English text, and the AMD tuning refused without it over the pretend helper. Each test that writes gets its own
+// the Korean-only text, and the AMD tuning refused without it over the pretend helper. Each test that writes gets its own
 // folder under the temp folder, removed afterwards.
 using System;
 using System.Collections.Generic;
@@ -171,17 +171,16 @@ internal static partial class Program
         });
 
         // ---------------------------------------------------------------- the texts
-        Test("English: lang.en.json gives the owner's English line for every line of the notice", () =>
+        Test("Korean only: every line of the notice, the refusal and the ask-again lines are Korean; no English copy", () =>
         {
-            var en = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "lang.en.json")))!;
-            Eq(7, OverclockNotice.English.Length, "headline, five lines, checkbox");
-            foreach (var (ko, english) in OverclockNotice.English) Eq<string?>(english, en.GetValueOrDefault(ko), $"[{ko}]");
+            static bool Korean(string s) => s.Any(c => c is >= '가' and <= '힣');
             var shown = OverclockNotice.Paragraphs.SelectMany(p => p).Prepend(OverclockNotice.Headline).Append(OverclockNotice.Agreement).ToList();
             Eq(7, shown.Count, "seven lines on screen");
-            foreach (var line in shown) True(OverclockNotice.English.Any(e => e.Korean == line), $"[{line}] has the owner's English");
-            True(en.ContainsKey(OverclockNotice.NotAgreed + U), "the refusal");
+            foreach (var line in shown) True(Korean(line), $"[{line}] is Korean");
+            True(Korean(OverclockNotice.NotAgreed + U), "the refusal");
             foreach (var need in new[] { ConsentNeed.Withdrawn, ConsentNeed.OtherVersion, ConsentNeed.OtherGpu, ConsentNeed.Preset })
-                True(en.ContainsKey(OcConsent.WhyAgain(need)!), $"{need} line");
+                True(Korean(OcConsent.WhyAgain(need)!), $"{need} line");
+            True(typeof(OverclockNotice).GetField("English") == null, "no English version of the notice");
         });
 
         // ---------------------------------------------------------------- the gate, over the pretend helper

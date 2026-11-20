@@ -11,8 +11,7 @@
 //                     on a measured gain of 3 % and twice the noise. boost.profiles points to 게임별 측정, not selected.
 //   GPU power         a power-limit test without a fault, 3 % and twice the noise, under 80 °C; never selected by default.
 //   Tips              never applied: refresh below the screen's best, memory below its rated speed, one stick, battery.
-// Every text is Korean in the app's 해요 style and says "측정" (with the numbers), "벤치마크 기준" or "사양 기준";
-// docs/pc-check/lang-advisor.json holds the English of each (AdvisorTests checks that every produced text is covered).
+// Every text is Korean in the app's 해요 style and says "측정" (with the numbers), "벤치마크 기준" or "사양 기준".
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -297,7 +296,7 @@ public static class PcAdvisor
     private static string Fill(string template, params object[] values) =>
         string.Format(Inv, template, values.Select(v => v is IFormattable f ? f.ToString(null, Inv) : v?.ToString() ?? "").ToArray<object>());
 
-    /// The Korean texts. Each one with Hangul has its English in docs/pc-check/lang-advisor.json ({0} slots as Lang.cs).
+    /// The Korean texts ({0} slots filled by Fill).
     internal static class K
     {
         // shared

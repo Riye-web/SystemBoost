@@ -390,35 +390,18 @@ public sealed partial class WindowsBoostBackend : IBoostBackend, IGameLimiter, I
         _plainHelper.Dispose();
     }
 
-    // The uninstall hook runs before the app's own screen and language exist, so its two messages carry both languages here.
-    private static bool English => Lang.Saved() != Lang.Korean;
-    private static readonly Dictionary<string, string> UninstallTitlesEn = new()
-    {
-        ["하드웨어 가속 GPU 스케줄링"] = "Hardware-accelerated GPU scheduling",
-        ["게임 우선순위 '보통 이상'"] = "Game priority 'Above normal'",
-        ["드라이버 게임 프로필"] = "Driver game profile",
-        ["오버클럭 / 전력 제한"] = "Overclock / power limit",
-        ["네트워크 어댑터 절전 끄기"] = "Network adapter power saving off",
-        ["게임 중 알림·업데이트 일시정지"] = "Pause notifications and updates during games",
-        [PagefileTitle] = "Virtual memory (paging file)",
-    };
-
+    // The uninstall hook runs before the app's own screen exists; the app is Korean only, so are its two messages.
     private static bool AskBeforeUninstall(IReadOnlyList<string> items)
     {
-        var list = string.Join("\n", items.Select(i => "· " + (English ? UninstallTitlesEn.GetValueOrDefault(i, i) : i)));
-        var text = English
-            ? $"These settings that SystemBoost changed with administrator rights are still in place:\n\n{list}\n\n"
-              + "Put them back before uninstalling? Choose Yes, then Yes in the Windows administrator prompt. Choose No to leave them as they are."
-            : $"SystemBoost가 관리자 권한으로 바꾼 설정이 아직 남아 있어요.\n\n{list}\n\n"
-              + "지우기 전에 원래대로 돌릴까요? '예'를 누른 뒤 Windows 관리자 확인 창에서도 '예'를 누르세요. '아니요'를 누르면 그대로 남아요.";
+        var list = string.Join("\n", items.Select(i => "· " + i));
+        var text = $"SystemBoost가 관리자 권한으로 바꾼 설정이 아직 남아 있어요.\n\n{list}\n\n"
+            + "지우기 전에 원래대로 돌릴까요? '예'를 누른 뒤 Windows 관리자 확인 창에서도 '예'를 누르세요. '아니요'를 누르면 그대로 남아요.";
         return MessageBoxW(IntPtr.Zero, text, "SystemBoost", MbYesNo | MbIconWarning | MbTopmost | MbSetForeground) == IdYes;
     }
 
     private static void TellUninstall(string? why)
     {
-        var text = English
-            ? "Some settings could not be put back, so they stay as they are." + (why != null ? "\n\n" + why : "")
-            : "일부 설정을 원래대로 돌리지 못해서 그대로 남아요." + (why != null ? "\n\n" + why : "");
+        var text = "일부 설정을 원래대로 돌리지 못해서 그대로 남아요." + (why != null ? "\n\n" + why : "");
         MessageBoxW(IntPtr.Zero, text, "SystemBoost", MbOk | MbIconWarning | MbTopmost | MbSetForeground);
     }
 

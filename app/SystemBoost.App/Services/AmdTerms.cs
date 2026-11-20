@@ -22,8 +22,8 @@ public static partial class AmdTerms
     /// 2027-01-01 00:00 KST, when Article 12-2 binds everyone (the revision date in eula.txt). Not to be moved earlier.
     public static readonly DateTime InForceUtc = new(2026, 12, 31, 15, 0, 0, DateTimeKind.Utc);
 
-    /// The headings the section starts with: eula.txt, and the reference translation eula.en.txt.
-    public static readonly string[] Headings = { "## 제12조의2", "## Article 12-2" };
+    /// The heading the section starts with in eula.txt, the only agreement text the app ships.
+    public static readonly string[] Headings = { "## 제12조의2" };
 
     /// A consent was given or withdrawn. May fire on any thread.
     public static event Action? Changed;

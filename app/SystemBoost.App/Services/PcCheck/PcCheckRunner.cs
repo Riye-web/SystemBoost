@@ -419,7 +419,7 @@ public sealed class PcCheckRunner
             {
                 var r = await _backend.RevertAsync(id);
                 if (!await _backend.IsAppliedAsync(id)) back++;
-                else notes.Add($"{BoostCatalog.All.FirstOrDefault(x => x.Id == id)?.Title ?? id} · {r}");   // " · ": each part has its own English
+                else notes.Add($"{BoostCatalog.All.FirstOrDefault(x => x.Id == id)?.Title ?? id} · {r}");
             }
             var left = PcApplyPlanner.AfterUndo(record, plan, await BoostsOnAsync(), _backend.GpuTuned, DateTime.Now);
             try { PcCheckStore.SaveApplied(AppliedPath, left); }   // empty: the file goes

@@ -98,8 +98,7 @@ internal static partial class Program
             var sent = r.Plain.Sent.Concat(r.Admin.Sent).ToList();
             True(sent.All(s => s == "amd.info"), "only amd.info: " + string.Join(", ", sent));
             Eq(0, r.Admin.Prompts + r.Gpu.Writes.Count, "no prompt, no write");
-            var en = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "lang.en.json")))!;
-            True(en.ContainsKey(AmdProtocol.OffText) && en.ContainsKey(AmdProtocol.OffNote), "both in English");
+            True(new[] { AmdProtocol.OffText, AmdProtocol.OffNote }.All(t => t.Any(c => c is >= '가' and <= '힣')), "both Korean, as the screen shows them");
         });
     }
 }

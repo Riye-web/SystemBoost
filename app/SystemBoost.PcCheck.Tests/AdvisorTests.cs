@@ -1,4 +1,4 @@
-// The advisor part's checks: PcAdvisor rules, CpuBenchmark, the spec parsers, and the English of every advisor text.
+// The advisor part's checks: PcAdvisor rules, CpuBenchmark, the spec parsers, and that every advisor text is Korean.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -67,7 +67,7 @@ internal static class AdvisorTests
         Tips();
         Robustness();
         Invariants();
-        Translations();
+        KoreanOnly();
         Benchmark();
         Parsers();
     }
@@ -560,59 +560,27 @@ internal static class AdvisorTests
         });
     }
 
-    // ------------------------------------------------------------ English
-    private static void Translations()
+    // ------------------------------------------------------------ Korean only
+    private static void KoreanOnly()
     {
-        var advisorPath = FindUp(Path.Combine("docs", "pc-check", "lang-advisor.json"));
-        Dictionary<string, string>? advisor = null;
-        T.Test("lang-advisor.json: UTF-8 without BOM, valid, English only, the same slots", () =>
+        T.Test("korean only: every advisor title and reason is Korean, as the screen shows it", () =>
         {
-            if (advisorPath == null) throw new CheckFailed("docs/pc-check/lang-advisor.json not found above " + AppContext.BaseDirectory);
-            var bytes = File.ReadAllBytes(advisorPath);
-            T.Check(!(bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF), "no BOM");
-            advisor = JsonSerializer.Deserialize<Dictionary<string, string>>(bytes) ?? throw new CheckFailed("empty");
-            foreach (var (k, v) in advisor)
-            {
-                T.Check(LangMirror.HasKorean(k), "key without Korean: " + k);
-                T.Check(!LangMirror.HasKorean(v) && v.Trim().Length > 0, "value not English: " + k);
-                T.Equal(string.Join(",", Slots(k)), string.Join(",", Slots(v)), "slots of " + k);
-            }
+            var notKorean = All.SelectMany(x => new[] { x.Title, x.Reason }).Where(s => s.Trim().Length > 0 && !HasKorean(s)).Distinct().ToList();
+            T.Check(notKorean.Count == 0, notKorean.Count + " texts without Korean: " + string.Join(" | ", notKorean.Take(5)));
         });
 
-        T.Test("every advisor text has its English (exact or a {0} template, slots too)", () =>
+        T.Test("korean only: the app ships no translation file", () =>
         {
-            if (advisor == null) throw new CheckFailed("lang-advisor.json not loaded");
-            var lang = new LangMirror(advisor);
-            var missing = Texts().Where(s => lang.T(s) == null).Distinct().ToList();
-            T.Check(missing.Count == 0, missing.Count + " texts without English: " + string.Join(" | ", missing.Take(5)));
-        });
-
-        T.Test("every K text with Korean is in lang-advisor.json", () =>
-        {
-            if (advisor == null) throw new CheckFailed("lang-advisor.json not loaded");
-            var consts = typeof(PcAdvisor.K).GetFields().Where(f => f.IsLiteral).Select(f => (string)f.GetRawConstantValue()!);
-            var missing = consts.Where(LangMirror.HasKorean).Where(c => !advisor.ContainsKey(c)).ToList();
-            T.Check(missing.Count == 0, "missing: " + string.Join(" | ", missing));
-        });
-
-        T.Test("merged with lang.en.json: same English, no entry of the app's catches an advisor text first", () =>
-        {
-            if (advisor == null) throw new CheckFailed("lang-advisor.json not loaded");
-            var appPath = Path.Combine(AppContext.BaseDirectory, "lang.en.json");
-            var app = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(appPath)) ?? new();
-            foreach (var (k, v) in advisor)
-                if (app.TryGetValue(k, out var other)) T.Equal(other, v, "lang.en.json already has " + k);
-            var merged = new Dictionary<string, string>(app);
-            foreach (var (k, v) in advisor) merged[k] = v;
-            var alone = new LangMirror(advisor);
-            var both = new LangMirror(merged);
-            foreach (var s in Texts().Distinct()) T.Equal(alone.T(s), both.T(s), "merged translation of " + s);
+            var csproj = FindUp(Path.Combine("app", "SystemBoost.App", "SystemBoost.App.csproj"))
+                         ?? throw new CheckFailed("app/SystemBoost.App/SystemBoost.App.csproj not found above " + AppContext.BaseDirectory);
+            var assets = Path.Combine(Path.GetDirectoryName(csproj)!, "Assets");
+            T.Equal(0, Directory.GetFiles(assets, "lang.*.json").Length, "no lang.*.json in Assets");
+            T.Check(!File.ReadAllText(csproj).Contains("lang.en"), "the app project packs no lang.en.json");
         });
     }
 
-    private static IEnumerable<string> Texts() => All.SelectMany(x => new[] { x.Title, x.Current, x.Proposed, x.Reason });
+    private static bool HasKorean(string s) => s.Any(c => c is >= '가' and <= '힣');
 
-    private static IEnumerable<string> Slots(string s) => Regex.Matches(s, @"\{\d+\}").Select(m => m.Value).OrderBy(x => x);
 
     private static string? FindUp(string relative)
     {
@@ -622,48 +590,6 @@ internal static class AdvisorTests
             if (File.Exists(p)) return p;
         }
         return null;
-    }
-
-    /// Lang.cs's matching without its fallbacks (splitting at " · " and between sentences): a text counts as covered only
-    /// when an exact entry or a {0} template takes all of it, and every slot that holds Korean is covered the same way.
-    private sealed class LangMirror
-    {
-        private static readonly Regex Slot = new(@"\{(\d+)\}");
-        private readonly Dictionary<string, string> _exact = new();
-        private readonly List<(Regex Pattern, string Text)> _templates = new();
-
-        public LangMirror(Dictionary<string, string> all)
-        {
-            foreach (var (key, value) in all.OrderByDescending(p => p.Key.Length))
-            {
-                if (!Slot.IsMatch(key)) { _exact[key] = value; continue; }
-                var pattern = "^" + Slot.Replace(Regex.Escape(key).Replace(@"\{", "{"), "(?<s$1>.+?)") + "$";
-                _templates.Add((new Regex(pattern, RegexOptions.Singleline), value));
-            }
-        }
-
-        public static bool HasKorean(string s) => s.Any(c => c is >= '가' and <= '힣');
-
-        public string? T(string text)
-        {
-            if (!HasKorean(text)) return text;
-            var trimmed = text.Trim();
-            if (_exact.TryGetValue(text, out var hit) || _exact.TryGetValue(trimmed, out hit)) return hit;
-            foreach (var (pattern, value) in _templates)
-            {
-                var m = pattern.Match(trimmed);
-                if (!m.Success) continue;
-                bool ok = true;
-                var done = Slot.Replace(value, s =>
-                {
-                    var inner = T(m.Groups["s" + s.Groups[1].Value].Value);
-                    if (inner == null) ok = false;
-                    return inner ?? "";
-                });
-                return ok ? done : null;   // Lang.cs takes the first template that matches, right or wrong
-            }
-            return null;
-        }
     }
 
     // ------------------------------------------------------------ CPU benchmark

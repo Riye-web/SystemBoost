@@ -66,7 +66,7 @@ public static partial class OcConsent
     public static string Standing()
     {
         if (Latest(Store.Load()) is not { } last) return "아직 이 안내에 동의하지 않았어요.";
-        var when = last.AtUtc is DateTime t ? t.ToLocalTime().ToString(Lang.Translating ? "yyyy-MM-dd HH:mm" : "yyyy년 M월 d일 HH:mm") : last.At;
+        var when = last.AtUtc is DateTime t ? t.ToLocalTime().ToString("yyyy년 M월 d일 HH:mm") : last.At;
         if (last.Withdrawn) return $"{when}에 동의를 철회했어요.";
         var line = $"{when}에 이 안내에 동의했어요 ({last.Gpu})";
         return last.Version == OverclockNotice.Version ? line : line + " · 안내 문구가 바뀌어서 다음에 켤 때 다시 동의를 받아요.";

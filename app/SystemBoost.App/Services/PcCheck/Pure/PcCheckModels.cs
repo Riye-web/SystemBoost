@@ -44,7 +44,7 @@ public sealed record FgChoice(string Mode, int MaxMul, string Quality);
 
 public enum RecKind { Boost, FrameGen, Gpu, Tip }
 
-/// One line of the result. Texts are Korean (each has an entry in lang.en.json) and say whether they come from a
+/// One line of the result. Texts are Korean and say whether they come from a
 /// measurement ("측정") or from the specs ("사양 기준"). Tips are shown, never applied (Applicable false).
 /// What applying does: BoostFeatureId (a BoostCatalog id), FrameGen, or PowerW (NVIDIA power limit, clocks untouched).
 public sealed record Recommendation(string Id, RecKind Kind, string Title, string Current, string Proposed, string Reason,

@@ -36,10 +36,10 @@ using Avalonia.Threading;
 
 namespace SystemBoost.App.Services;
 
-/// A ticket kind or a refund reason. Ko is shown (and translated by Lang); a server entry brings its own English.
+/// A ticket kind or a refund reason. Ko is shown (the screen is Korean only); En is what a server entry may still bring, unused.
 public sealed record SupportChoice(string Id, string Ko, string En = "")
 {
-    public string Label => Lang.Translating && En.Length > 0 ? En : Ko;
+    public string Label => Ko;
 }
 
 public sealed record SupportFaq(string Q, string A);
@@ -86,8 +86,8 @@ public static class Support
     private static readonly TimeSpan WaitingWindow = TimeSpan.FromDays(14), PageWindow = TimeSpan.FromDays(30);
     private static readonly TimeSpan InfoKeep = TimeSpan.FromMinutes(10), InfoRetry = TimeSpan.FromMinutes(1);
 
-    /// The privacy policy on the seller's server (GET /privacy). The Korean page is the policy; ?lang=en is a summary.
-    public static string PrivacyUrl => License.ServerUrl + (Lang.Translating ? "/privacy?lang=en" : "/privacy");
+    /// The privacy policy on the seller's server (GET /privacy), the Korean page.
+    public static string PrivacyUrl => License.ServerUrl + "/privacy";
 
     /// Which tickets a look covers: waiting for the seller (background), not closed (page), all (새로 고침).
     public enum Scope { Waiting, Page, All }

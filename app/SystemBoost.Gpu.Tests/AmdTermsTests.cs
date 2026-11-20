@@ -1,5 +1,5 @@
 // The separate consent to Article 12-2 of the licence agreement (AmdTerms): when it is required, its records in
-// consents.json beside the overclocking ones, the article read from eula.txt, the English of its texts, and the AMD
+// consents.json beside the overclocking ones, the article read from eula.txt, its texts in Korean, and the AMD
 // backend sending no amd.* command at all while it is missing (AmdHost.AmdTermsOk false) over the pretend helper.
 using System;
 using System.Collections.Generic;
@@ -98,9 +98,11 @@ internal static partial class Program
         }));
 
         // ---------------------------------------------------------------- the article
-        Test("amd terms: Article 12-2 read from eula.txt and eula.en.txt, heading to the next heading", () =>
+        Test("amd terms: Article 12-2 read from eula.txt, heading to the next heading; no English agreement", () =>
         {
-            foreach (var (file, heading, next) in new[] { ("eula.txt", "## 제12조의2 (AMD 구성 요소)", "## 제13조"), ("eula.en.txt", "## Article 12-2 (AMD components)", "## Article 13") })
+            Eq(0, AmdTerms.Section(new[] { "## Article 12-2 (AMD components)", "1. a" }).Count, "an English heading is not the article");
+            Eq("## 제12조의2", string.Join("|", AmdTerms.Headings), "the Korean heading only");
+            foreach (var (file, heading, next) in new[] { ("eula.txt", "## 제12조의2 (AMD 구성 요소)", "## 제13조") })
             {
                 var lines = AssetLines(file);
                 var section = AmdTerms.Section(lines);
@@ -117,23 +119,10 @@ internal static partial class Program
         });
 
         // ---------------------------------------------------------------- the texts
-        Test("amd terms: every new text has its English, the same in docs/amd-consent and lang.en.json", () =>
+        Test("amd terms: the consent texts are Korean (the screen is Korean only)", () =>
         {
-            Dictionary<string, string> Load(string file) =>
-                JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, file)))!;
-            var en = Load("lang.en.json");
-            var mine = Load("lang-amd-consent.json");
-            True(mine.Count >= 20, "the entries");
-            foreach (var (ko, english) in mine)
-            {
-                Eq<string?>(english, en.GetValueOrDefault(ko), $"[{ko}] in lang.en.json");
-                True(english.Length > 0 && !english.Any(c => c is >= '가' and <= '힣'), $"[{ko}] is English");
-            }
-            foreach (var text in new[] { AmdProtocol.TermsText, AmdGpuBackend.TuningWaitsText, AmdGpuBackend.ProfileWaitsText,
-                                         "AMD 구성 요소 조건에 동의하지 않아서 GPU 설정을 되돌리지 못했어요. 기록은 남겨 둬요" })
-                True(mine.ContainsKey(text), $"[{text}]");
-            True(en.ContainsKey("{0} (바뀐 것 없음)"), "TermsText + (바뀐 것 없음) through the template");
-            True(en.ContainsKey(AmdGpuBackend.Untested), "the untested line stays");
+            foreach (var text in new[] { AmdProtocol.TermsText, AmdGpuBackend.TuningWaitsText, AmdGpuBackend.ProfileWaitsText, AmdGpuBackend.Untested })
+                True(text.Any(c => c is >= '가' and <= '힣'), $"[{text}] is Korean");
         });
 
         // ---------------------------------------------------------------- the gate, over the pretend helper

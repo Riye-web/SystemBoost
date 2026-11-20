@@ -214,14 +214,14 @@ public sealed partial class AccountPage
         }
     }
 
-    /// The country's name in the screen's language; the code itself when the system does not know it.
+    /// The country's name; the code itself when the system does not know it.
     private static string Country(string code)
     {
         if (code.Length != 2) return "";
         try
         {
             var region = new RegionInfo(code);
-            return Lang.Translating ? region.EnglishName : region.DisplayName;
+            return region.DisplayName;
         }
         catch (ArgumentException) { return code; }
     }

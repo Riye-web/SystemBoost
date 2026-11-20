@@ -56,8 +56,8 @@ public static class Eula
 
     public static string[] Lines()
     {
-        // The Korean text is the agreement; the English one says so on its first line.
-        using var stream = AssetLoader.Open(new Uri($"avares://SystemBoost/Assets/eula{(Lang.Translating ? ".en" : "")}.txt"));
+        // The agreement is the Korean text, the only one the app ships.
+        using var stream = AssetLoader.Open(new Uri("avares://SystemBoost/Assets/eula.txt"));
         using var reader = new StreamReader(stream, Encoding.UTF8);
         return reader.ReadToEnd().Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
     }
