@@ -28,7 +28,7 @@ build/macos/                build.sh, Info.plist, entitlements (출시하지 않
 RELEASE_NOTES.md            최근 버전의 바뀐 점 (앱 업데이트 화면과 릴리스에 그대로 표시)
 docs/RELEASE_HISTORY.md     0.8.11 이전의 바뀐 점 (보관용, 사용자에게 표시하지 않음)
 docs/HOTFIX.md              긴급 수정, 릴리스 되돌리기, 서버 롤백 절차
-site/download.html          옛 다운로드 페이지 (실제 사이트는 gh-pages 브랜치의 index.html, 9개 언어)
+site/download.html          옛 다운로드 페이지 (실제 사이트는 gh-pages 브랜치의 index.html, 한국어만)
 ```
 
 ## 배포 파일 (다운로드할 때 선택)

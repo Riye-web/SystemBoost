@@ -11,9 +11,9 @@ Base commit: feat/pc-check (on feat/accounts 5226d38 = the 0.8.18 release candid
 | Part | Branch / worktree | Files it owns (touch nothing else; report overlaps) |
 |---|---|---|
 | native | feat/pc-native, C:\dev\SystemBoost-wt-pc-native | native/framegen/** (new Bench.cpp/.h, main.cpp, Settings.h, CMakeLists.txt, README_FRAMEGEN.md, tests) |
-| advisor | feat/pc-advisor, C:\dev\SystemBoost-wt-pc-advisor | Services/PcCheck/Pure/PcAdvisor.cs, Pure/CpuBenchmark.cs, (new Pure/*.cs of its own), Services/PcCheck/PcSpecReader.cs, app/SystemBoost.PcCheck.Tests/AdvisorTests.cs, docs/pc-check/lang-advisor.json |
-| runner | feat/pc-runner, C:\dev\SystemBoost-wt-pc-runner | Services/PcCheck/PcCheckRunner.cs, new Pure/FgBenchProtocol.cs, Pure/PcCheckStore.cs (or similar pure files), new Services/WindowsBoostBackend.PcCheck.cs (partial), ViewModels/FrameGenViewModel.cs (saved choice only), RunnerTests.cs, docs/pc-check/lang-runner.json |
-| ui | feat/pc-ui, C:\dev\SystemBoost-wt-pc-ui | new Pages/PcCheckPage.cs, MainWindow.axaml.cs (one nav line), Pages/Pages.cs (dashboard card), Pages/PremiumPage.cs (plan table row), docs/pc-check/lang-ui.json |
+| advisor | feat/pc-advisor, C:\dev\SystemBoost-wt-pc-advisor | Services/PcCheck/Pure/PcAdvisor.cs, Pure/CpuBenchmark.cs, (new Pure/*.cs of its own), Services/PcCheck/PcSpecReader.cs, app/SystemBoost.PcCheck.Tests/AdvisorTests.cs |
+| runner | feat/pc-runner, C:\dev\SystemBoost-wt-pc-runner | Services/PcCheck/PcCheckRunner.cs, new Pure/FgBenchProtocol.cs, Pure/PcCheckStore.cs (or similar pure files), new Services/WindowsBoostBackend.PcCheck.cs (partial), ViewModels/FrameGenViewModel.cs (saved choice only), RunnerTests.cs |
+| ui | feat/pc-ui, C:\dev\SystemBoost-wt-pc-ui | new Pages/PcCheckPage.cs, MainWindow.axaml.cs (one nav line), Pages/Pages.cs (dashboard card), Pages/PremiumPage.cs (plan table row) |
 
 All paths under app/SystemBoost.App unless they start with app/ or docs/ or native/. Pure/PcCheckModels.cs is shared and
 frozen: if a part needs a change there, it reports it instead of editing (the lead changes it).
@@ -32,9 +32,7 @@ signatures exactly; a part may add members, never rename or remove.
   cannot show a stable offset): only the power limit, within the card's own range, measured on and off.
 - No exaggeration. Every recommendation says where it comes from: "측정" with the numbers, or "사양 기준". Nothing
   claims a gain that was not measured. Unmeasured effects say "효과는 게임마다 달라요".
-- Every new user-visible Korean string has an English entry. Do NOT edit Assets/lang.en.json (all parts would collide):
-  put `{"<Korean>": "<English>"}` pairs in your docs/pc-check/lang-<part>.json (UTF-8, no BOM); `{0}` slots as Lang.cs.
-  The lead merges them. Design stays: black background, orange accent #FF7A1A, the Ui.* helpers.
+- User-visible strings are Korean only (the app is Korean only since 0.8.21; there are no translation files). Design stays: black background, orange accent #FF7A1A, the Ui.* helpers.
 - Results stay on this PC (data\pc-check.json); nothing is sent anywhere. No telemetry.
 - Don't run any benchmark, GPU load, the app's GUI or anything that changes the PC on this machine: the owner is
   playing a game. Build and run unit tests only (below-normal priority). Say what stayed unverified.
@@ -80,7 +78,7 @@ Order on the page: tips that need the user (display refresh, RAM), frame generat
   80. SelectedByDefault FALSE (overclocking is opt-in; the notice is asked on apply). Text names the measured fps.
 - Tips (Applicable false): display set below its max refresh at this resolution; RAM running below its rated speed
   (XMP/EXPO in the BIOS, the app does not change it); one RAM stick (dual channel); laptop on battery.
-- Every Title/Current/Proposed/Reason Korean, with an English pair in lang-advisor.json (templates with {0}).
+- Every Title/Current/Proposed/Reason in Korean.
 
 ## Runner (PcCheckRunner, Windows)
 
