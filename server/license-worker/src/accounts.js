@@ -68,7 +68,6 @@ const fail = (status, error) => ({ status, error });
 const cleanId = v => String(v || "").trim().toLowerCase();
 const newRecovery = () => code(16).match(/.{4}/g).join("-");
 const newToken = () => hex(random(32));
-const langOf = b => (b.lang === "en" ? "en" : "ko");
 function newMemberId() {   // "m" + 11 of [a-z0-9], every symbol equally likely
   let out = "m";
   while (out.length < 12) for (const x of random(16)) if (x < 252 && out.length < 12) out += ID_CHARS[x % 36];
@@ -164,9 +163,10 @@ async function secrets(env) {
 }
 
 // Where the links in mails point: the Worker's public address (wrangler.toml PUBLIC_URL), else the request's.
-function link(env, b, path, t, lang) {
+// Mails and the pages they open are Korean only, so a link carries no language.
+function link(env, b, path, t) {
   const base = String(env.PUBLIC_URL || b.origin || "").trim().replace(/\/+$/, "");
-  return base + "/account/" + path + "?t=" + t + (lang === "en" ? "&lang=en" : "");
+  return base + "/account/" + path + "?t=" + t;
 }
 
 /**
@@ -425,7 +425,7 @@ async function login(env, s, b, ctx, where) {
                                      session: await sha(token), pending: await sha(pending) });
   if (r.error) return r;
   if (r.twofa) return { twofa: true, pending };
-  if (r.newDevice && r.email) sendMail(env, ctx, { to: r.email, kind: "new_device", lang: langOf(b), data: { device: dev.name, country: where.country, when: Date.now() } });
+  if (r.newDevice && r.email) sendMail(env, ctx, { to: r.email, kind: "new_device", data: { device: dev.name, country: where.country, when: Date.now() } });
   return { id: r.id ?? id, token };
 }
 
@@ -445,9 +445,8 @@ async function login2(env, s, b, ctx, where) {
   const token = newToken();
   const r = await db(env, "login2", { pending, ip, ...where, ...verdict, session: await sha(token) });
   if (r.error) return r;
-  const lang = langOf(b);
-  if (r.email && useBackup) sendMail(env, ctx, { to: r.email, kind: "backup_used", lang, data: { left: r.backupLeft } });
-  if (r.email && r.newDevice) sendMail(env, ctx, { to: r.email, kind: "new_device", lang, data: { device: printable(r.device, 40), country: where.country, when: Date.now() } });
+  if (r.email && useBackup) sendMail(env, ctx, { to: r.email, kind: "backup_used", data: { left: r.backupLeft } });
+  if (r.email && r.newDevice) sendMail(env, ctx, { to: r.email, kind: "new_device", data: { device: printable(r.device, 40), country: where.country, when: Date.now() } });
   return useBackup ? { id: r.id, token, backupLeft: Number(r.backupLeft) || 0, redo2fa: true } : { id: r.id, token };
 }
 
@@ -467,7 +466,7 @@ async function recover(env, s, b, ctx, where) {
     r = await db(env, "recover", call);
     if (r.error) return r;
   }
-  if (r.email) sendMail(env, ctx, { to: r.email, kind: "password_changed", lang: langOf(b), data: { when: Date.now() } });
+  if (r.email) sendMail(env, ctx, { to: r.email, kind: "password_changed", data: { when: Date.now() } });
   return { id, token, recovery };
 }
 
@@ -480,7 +479,7 @@ async function changePassword(env, s, session, b, ctx, where) {
   const r = await db(env, "password", { token: session, pw: await s.password(String(b.password || "").slice(0, 100)), next: await s.password(next),
                                         nextProof: await s.proof(recovery), session: await sha(token), ip: await s.ip(b.ip), ...where });
   if (r.error) return r;
-  if (r.email) sendMail(env, ctx, { to: r.email, kind: "password_changed", lang: langOf(b), data: { when: Date.now() } });
+  if (r.email) sendMail(env, ctx, { to: r.email, kind: "password_changed", data: { when: Date.now() } });
   return { id: me.id, token, recovery };
 }
 
@@ -501,11 +500,11 @@ async function signupEmail(env, s, b, ctx, deps) {
   const invite = String(b.invite ?? "").trim().toUpperCase();
   if (invite && !CODE_RE.test(invite)) return fail(404, "unknown");
   if (invite && deps.isSellerCode && (await deps.isSellerCode(env, invite))) return fail(409, "referral");
-  const t = newToken(), lang = langOf(b);
+  const t = newToken();
   const r = await db(env, "signup_email", { email, pw: await s.password(password), t: await sha(t), ip: await s.ip(b.ip), consent, invite });
   if (r.error) return r;
-  if (r.mail === "verify") sendMail(env, ctx, { to: email, kind: "verify", lang, data: { link: link(env, b, "verify", t, lang) } });
-  else if (r.mail === "already") sendMail(env, ctx, { to: email, kind: "already", lang, data: {} });
+  if (r.mail === "verify") sendMail(env, ctx, { to: email, kind: "verify", data: { link: link(env, b, "verify", t) } });
+  else if (r.mail === "already") sendMail(env, ctx, { to: email, kind: "already", data: {} });
   return { sent: true };
 }
 
@@ -519,7 +518,7 @@ async function verify(env, s, b, ctx, where) {
     const r = await db(env, "verify", { t, id: newMemberId(), proof: await s.proof(newRecovery()), ...(pw ? { pw } : {}), ...where });
     if (r.error === "retry") continue;
     if (r.error) return r;
-    if (r.mail === "email_added") sendMail(env, ctx, { to: r.email, kind: "email_added", lang: langOf(b), data: { id: r.id } });
+    if (r.mail === "email_added") sendMail(env, ctx, { to: r.email, kind: "email_added", data: { id: r.id } });
     return { done: true, _added: r.mail === "email_added" };
   }
   return fail(503, "unavailable");
@@ -529,10 +528,10 @@ async function forgot(env, s, b, ctx) {
   if (!mailOn(env)) return fail(503, "mail_off");
   const email = cleanEmail(b.email);
   if (!email) return fail(400, "email");
-  const t = newToken(), lang = langOf(b);
+  const t = newToken();
   const r = await db(env, "forgot", { email, t: await sha(t), ip: await s.ip(b.ip) });
   if (r.error) return r;
-  if (r.mail === "reset" && r.email) sendMail(env, ctx, { to: r.email, kind: "reset", lang, data: { link: link(env, b, "reset", t, lang) } });
+  if (r.mail === "reset" && r.email) sendMail(env, ctx, { to: r.email, kind: "reset", data: { link: link(env, b, "reset", t) } });
   return { sent: true };
 }
 
@@ -546,7 +545,7 @@ async function reset(env, s, b, ctx, where) {
   if (!newPasswordOk(next, peek.id, peek.email)) return fail(400, "weak");
   const r = await db(env, "reset", { t, next: await s.password(next), ...where });
   if (r.error) return r;
-  if (r.email) sendMail(env, ctx, { to: r.email, kind: "password_changed", lang: langOf(b), data: { when: Date.now() } });
+  if (r.email) sendMail(env, ctx, { to: r.email, kind: "password_changed", data: { when: Date.now() } });
   return { done: true };
 }
 
@@ -554,12 +553,12 @@ async function addEmail(env, s, token, b, ctx, where) {
   if (!mailOn(env)) return early(env, token, fail(503, "mail_off"));
   const email = cleanEmail(b.email);
   if (!email) return early(env, token, fail(400, "email"));
-  const t = newToken(), lang = langOf(b);
+  const t = newToken();
   const r = await db(env, "add_email", { token, pw: await s.password(String(b.password || "").slice(0, 100)), ip: await s.ip(b.ip),
                                          email, t: await sha(t), ...where });
   if (r.error) return r;
-  if (r.mail === "verify") sendMail(env, ctx, { to: email, kind: "verify", lang, data: { link: link(env, b, "verify", t, lang) + "&add=1", add: true, id: r.id } });
-  else if (r.mail === "already") sendMail(env, ctx, { to: email, kind: "already", lang, data: {} });
+  if (r.mail === "verify") sendMail(env, ctx, { to: email, kind: "verify", data: { link: link(env, b, "verify", t) + "&add=1", add: true, id: r.id } });
+  else if (r.mail === "already") sendMail(env, ctx, { to: email, kind: "already", data: {} });
   return { sent: true };
 }
 
@@ -630,10 +629,10 @@ async function linkKey(env, s, token, b, ctx, deps) {
   if (!k) return early(env, token, fail(400, "key"));
   const to = cleanEmail(k.meta?.email || k.payload?.email);
   if (!to) return early(env, token, fail(400, "no_email"));
-  const t = newToken(), lang = langOf(b);
+  const t = newToken();
   const r = await db(env, "link_key", { token, key: k.id, t: await sha(t), ip: await s.ip(b.ip) });
   if (r.error) return r;
-  sendMail(env, ctx, { to, kind: "link_key", lang, data: { link: link(env, b, "link", t, lang), keyId: k.id } });
+  sendMail(env, ctx, { to, kind: "link_key", data: { link: link(env, b, "link", t), keyId: k.id } });
   return { sent: true };
 }
 
@@ -655,7 +654,7 @@ function factsOf(b) {
   if ([...String(b.message ?? "")].length > 1000) return null;
   const m = printable(String(b.message ?? "").replace(/\r?\n/g, " "), 1000);
   if (m) f.message = m;
-  f.lang = langOf(b);
+  f.lang = "ko";   // Korean only (the language of the mails about this request)
   return f;
 }
 
@@ -665,12 +664,12 @@ async function recoveryRequest(env, s, b, ctx, where) {
   const facts = factsOf(b);
   if (!facts) return fail(400, "facts");
   const byEmail = login.includes("@");
-  const t = newToken(), lang = langOf(b);
+  const t = newToken();
   const r = await db(env, "recovery_request", { ...(byEmail ? { email: login.toLowerCase() } : { id: cleanId(login) }), facts,
                                                 t: await sha(t), rid: hex(random(6)), ip: await s.ip(b.ip), ...where });
   if (r.error) return r;
   if (r.mail === "recovery_requested" && r.email)
-    sendMail(env, ctx, { to: r.email, kind: "recovery_requested", lang, data: { link: link(env, b, "recovery/cancel", t, lang), due: r.due } });
+    sendMail(env, ctx, { to: r.email, kind: "recovery_requested", data: { link: link(env, b, "recovery/cancel", t), due: r.due } });
   return { sent: true };
 }
 
@@ -683,8 +682,7 @@ async function approveRecovery(env, s, b, ctx) {
   const r = await db(env, "admin/recovery_approve", { id, t: await sha(t), proof: await s.proof(recovery), mail: mailOn(env) });
   if (r.error) return r;
   if (r.email) {
-    const lang = r.lang === "en" ? "en" : "ko";
-    sendMail(env, ctx, { to: r.email, kind: "recovery_approved", lang, data: { link: link(env, b, "reset", t, lang) } });
+    sendMail(env, ctx, { to: r.email, kind: "recovery_approved", data: { link: link(env, b, "reset", t) } });
     return { ok: true, account: r.account, mailed: true };
   }
   return { ok: true, account: r.account, recovery };

@@ -196,7 +196,7 @@ assert.deepEqual([r.http, r.error], [503, "busy"]);
 for (const [p, b] of [["/preorders"], ["/preorders/seen", {}], ["/preorders/export", {}], ["/preorders/delete", { email: "fan@example.com" }]]) {
   const d = await adm(p, b);
   assert.deepEqual([d.http, d.error, d.csv], [503, "통계 저장소에 연결하지 못했어요. 잠시 뒤 다시 시도하세요", undefined], p);
-  assert.ok(d.error_en, p);
+  assert.equal(d.error_en, undefined, p);   // Korean only
 }
 st.down = false;
 
@@ -344,20 +344,18 @@ for (const [q, words] of [
         "수신 거부는 https://systemboost-license.euning97.workers.dev/preorder/unsubscribe 에 신청한 메일 주소만 넣으면 바로 돼요",
         "사전예약 창에서 동의 칸에 체크한 경우만, 2026년 11월 27일 23:59(한국 시간)까지 받아요. 만 14세 이상만",
         "2027년 2월 28일에 서버에서 모두 지워요", "Cloudflare(제4조)", "동의하지 않아도 돼요", "제5조의 방법(웹 /help, 제10조의 메일)"]],
-  ["?lang=en", ["Separate notice: pre-registration on the official site", "Email address, plan of interest, site language, time of sign-up, time of consent to receive advertising information",
-                "To unsubscribe, enter that address at https://systemboost-license.euning97.workers.dev/preorder/unsubscribe",
-                "It applies from November 20, 2026.", "until November 27, 2026, 23:59 (Korean time). 14 or older only",
-                "All deleted from the server on February 28, 2027", "You may refuse.", "Your rights"]]]) {
+  ["?lang=en", ["별도 안내: 공식 사이트 사전예약", "2026년 11월 20일부터 적용해요", "2027년 2월 28일에 서버에서 모두 지워요"]]]) {   // Korean only
   const p = await page("/privacy" + q, "2026-11-21T00:00:00Z");
   assert.equal(p.http, 200);
   for (const w of words) assert.ok(p.text.includes(w), JSON.stringify(q) + " has: " + w);
+  assert.ok(!/Separate notice|English|lang=en/.test(p.text), q + ": no English");
   assert.ok(p.text.includes('<section id="preorder">') && p.text.includes('<a href="#preorder">'), q + ": the section and the link to it");
   assert.ok(p.text.indexOf('id="preorder-note"') < p.text.indexOf('<nav class="toc"'), q + ": the box is above the contents");
   assert.ok(!/<script|\son\w+=|\bsrc=/i.test(p.text), q + ": no script, nothing loaded");
   // the new policy (?next=1) lists pre-registration in its own articles, without this notice
   const nx = await page("/privacy?next=1" + q.replace("?", "&"), "2026-11-21T00:00:00Z");
-  assert.ok(!nx.text.includes('id="preorder') && nx.text.includes(q ? "Pre-registration on the official site" : "공식 사이트의 사전예약"), q + ": ?next=1");
-  assert.ok(nx.text.includes(q ? "sign-up time and the time of consent to receive advertising information" : "신청 시각, 광고성 정보 수신 동의 시각")
+  assert.ok(!nx.text.includes('id="preorder') && nx.text.includes("공식 사이트의 사전예약"), q + ": ?next=1");
+  assert.ok(nx.text.includes("신청 시각, 광고성 정보 수신 동의 시각")
             && nx.text.includes("https://systemboost-license.euning97.workers.dev/preorder/unsubscribe"), q + ": ?next=1 has the consent time and the unsubscribe page");
   // gone with the rows on 2027-02-28 KST
   assert.ok((await page("/privacy" + q, "2027-02-27T14:59:00Z")).text.includes('id="preorder"'));

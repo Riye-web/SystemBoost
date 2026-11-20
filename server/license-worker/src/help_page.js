@@ -1,7 +1,7 @@
 // GET /help: the support center for people without the app (FAQ, refund policy, seller info, a request form,
 // and a way to read a request again). Served by support.js helpPage() with a per-request CSP nonce.
 // Every value that comes from the server or from a person is put in with textContent, never as HTML.
-// Korean by default, English with ?lang=en (the server sets <html lang>).
+// Korean only (?lang=en shows the same Korean page).
 // The ticket token goes in the X-Ticket-Token header (reading) or the JSON body (reply, close), never in a URL.
 // Lengths are counted in characters like the server ([...s]), not with maxlength (UTF-16 units): the page shows the
 // count and refuses to send over the limit instead of cutting.
@@ -45,8 +45,8 @@ button.ghost{background:transparent;color:var(--text);border:1px solid var(--lin
 </style>
 </head>
 <body>
-<noscript><div class="box warn"><p>이 페이지는 JavaScript가 있어야 동작해요. SystemBoost 앱의 '고객센터'에서도 문의할 수 있어요.</p><p>This page needs JavaScript. You can also send a request from 'Support' in the SystemBoost app.</p></div></noscript>
-<header><h1 data-t="title"></h1><a id="langLink" href="?lang=en"></a></header>
+<noscript><div class="box warn"><p>이 페이지는 JavaScript가 있어야 동작해요. SystemBoost 앱의 '고객센터'에서도 문의할 수 있어요.</p></div></noscript>
+<header><h1 data-t="title"></h1></header>
 <p class="m" data-t="lead"></p>
 <p class="m" data-t="about"></p>
 <p class="m" data-t="koreaOnly"></p>
@@ -129,10 +129,8 @@ button.ghost{background:transparent;color:var(--text);border:1px solid var(--lin
 <script nonce="__NONCE__">
 (function () {
   "use strict";
-  var L = document.documentElement.lang === "en" ? "en" : "ko";
   var TX = {
-    ko: {
-      title: "SystemBoost 고객센터", other: "English", lead: "자주 묻는 질문과 환불 안내를 보고, 앱 없이도 문의를 남길 수 있어요.",
+      title: "SystemBoost 고객센터", lead: "자주 묻는 질문과 환불 안내를 보고, 앱 없이도 문의를 남길 수 있어요.",
       about: "지원 환경: 현재 윈도우만 지원해요",
       koreaOnly: "SystemBoost는 대한민국에서만 판매해요.",
       // Only the names this page and the default FAQ actually show (a FAQ written on the dashboard may add others).
@@ -196,82 +194,16 @@ button.ghost{background:transparent;color:var(--text);border:1px solid var(--lin
              notFound: "문의를 찾지 못했어요. 문의 번호와 확인 코드를 확인하세요.",
              closed409: "닫은 지 30일이 지나 다시 열 수 없어요. 새 문의를 남겨 주세요.", full: "메시지가 30개라 더 쓸 수 없어요. 새 문의를 남겨 주세요.",
              net: "서버에 연결하지 못했어요. 잠시 뒤 다시 시도하세요.", generic: "처리하지 못했어요. 잠시 뒤 다시 시도하세요.", info: "고객센터 정보를 불러오지 못했어요. 잠시 뒤 새로고침하세요." }
-    },
-    en: {
-      title: "SystemBoost Support", other: "한국어", lead: "Read the FAQ and the refund policy, and send a request without the app.",
-      about: "Supported system: Windows only for now",
-      koreaOnly: "SystemBoost is sold only in the Republic of Korea.",
-      trademark: "Windows is a trademark of the Microsoft group of companies. AMD and Radeon are trademarks of Advanced Micro Devices, Inc. Cloudflare, Supabase, Resend, Lemon Squeezy and Discord are trademarks of their owners, named only to identify services the seller uses. SystemBoost is not made or endorsed by Microsoft or AMD.",
-      faq: "FAQ", refund: "Refunds and withdrawal", seller: "Seller", ask: "Send a request", mine: "My requests", loading: "Loading…",
-      privacy: "Privacy policy", privacyMore: "Details are in the privacy policy",
-      termsNav: "License agreement", termsTitle: "License agreement changes · in force January 1, 2027", termsLink: "Read the changed license agreement",
-      termsLead: "The articles below change on January 1, 2027; until then the previous wording applies. From version 0.8.12 the app shows the changed agreement when it starts and asks for consent again. The Korean text is the agreement.",
-      termsItems: ["Article 1: the 'sales page' means the app's ★ Plans screen and Support, and this help page (/help).",
-                   "Article 3, Paragraph 2: each plan's features, and the system requirements for them, are as the app's ★ Plans screen shows at the time of purchase.",
-                   "Article 3, Paragraph 3: how to cancel a card subscription (the subscription link in the payment email), that a cancelled subscription can still be used until the paid period ends, and when an amount already paid is refunded.",
-                   "Article 3, Paragraph 10 (new): if the seller rejects a direct-payment order, money received for it is returned, or the steps to return it are taken, within 3 business days of receiving it at the latest.",
-                   "Article 3, Paragraph 11 (new): a minor who buys a paid plan without a legal representative's consent, or the legal representative, may cancel the purchase, except where the Civil Act does not allow it.",
-                   "Article 6-2 (new): the app's overclocking and power limit notice is now part of the agreement. The user is responsible for choosing to enable these features and for the results, except for damage caused by SystemBoost's intentional misconduct or gross negligence. Consent is asked the first time, when the graphics card or the notice changes, and when a preset with overclocking values is imported, and can be withdrawn in the app at any time. In an app signed in as a member, the consent record is also kept with the member account.",
-                   "Article 8: in detail, what is sent to and kept on the server and for how long, transfer abroad (Cloudflare, Supabase, Resend for emails, Discord for the seller's alerts), choosing whether to send usage statistics, member data (including email addresses, 2-step login, signed-in devices, a 30-day security log and account recovery requests), having keys sent again by email, answers to card subscription price changes (3 years), IP address hashes, support records and backups.",
-                   "Article 9, Paragraph 2: what can be tried before buying changes from a 3-day trial key to the free plan. Features only in paid plans cannot be tried before buying.",
-                   "Article 9, Paragraph 5: withdrawal and refund requests can also be sent from Support in the app or on this help page.",
-                   "Article 10, Paragraph 3: the cap on damages for the seller's slight negligence changes from 'the amount paid' to 'the larger of the amount paid and 100,000 won' (100,000 won for free-plan users).",
-                   "Article 12-2 (new): the terms for the AMD components (ADLX SDK) apply only to builds that include the Radeon driver features. Radeon driver features are left out until the license check is finished. Frame generation still works on Radeon."],
-      refundLead: "Refunds (withdrawal) follow Article 9 of the license agreement. Here it is word for word. Paragraphs 2 and 5 are the wording in force from January 1, 2027; until then the previous wording applies.",
-      refundDays: "Withdrawal period: 7 days from receiving the key (license agreement, Article 9, Paragraph 1)",
-      refundDaysLonger: "Withdrawal period announced by the seller: {n} days from receiving the key (longer than the 7 days set by law)",
-      minors: "If a minor pays without the consent of a legal representative, the minor or the legal representative may cancel the purchase (license agreement, Article 3, Paragraph 11).",
-      refundHow: "Send a refund request under 'Send a request' with the category 'Refund'. The seller checks it and replies in that request.",
-      refundCard: "Card payment (Lemon Squeezy): when the seller refunds it in Lemon Squeezy, the key is blocked and the request shows the refund as complete.",
-      refundManual: "Bank transfer · direct payment: the seller pays the money back, then marks the refund complete and blocks the key.",
-      sellerEmpty: "Not entered by the seller yet",
-      sellerLabels: { name: "Business name", rep: "Representative", address: "Address", bizNo: "Business registration no.", mailOrderNo: "Mail-order business no.", email: "Email", phone: "Phone", hours: "Support hours" },
-      closed: "Requests are closed for now. Requests you sent can still be read under 'My requests'.",
-      closedRefunds: "General questions are closed for now. Refund (withdrawal) requests are still accepted. For anything else, use the contact details in the seller information on this page. Requests you sent can still be read under 'My requests'.",
-      cat: "Category", subject: "Subject", text: "Message", reason: "Reason for the refund", refundNeeds: "A refund request needs an order code or a license key.",
-      order: "Order code (optional)", orderNote: "The code you got when paying on '★ Plans' in the app. Sent only if you fill it in.",
-      orderNeed: "Order code (required)",
-      depositGuide: "Get an order code (SB-XXXX-XXXX) → transfer the money to the seller's account → press 'Tell Support you have paid' in the app → the seller checks it and sends the key within 24 hours. The 24 hours count from when you tell us you have paid. Sending it here without the app works the same; the order is then marked as paid by you.",
-      payer: "Payer name (optional)", payerNote: "Fill it in if the name on the transfer differs from the person who ordered. The seller uses it only to find your payment.",
-      key: "License key or key ID (optional)",
-      keyNote: "Paste the full key and the server checks by its signature that it is yours. The key is used only for that check and is not stored; the request keeps only its key ID (16 characters). With only a key ID nothing can be checked, so the seller may ask you more.",
-      contact: "A contact the seller can use (optional, e.g. email)",
-      contactNote: "Sent only if you fill it in, and kept with the request. Replies appear under 'My requests' on this page.",
-      consentTitle: "How your request is kept (required)",
-      consentText: "What is kept: the category, subject, message, the seller's replies, the order code and key ID (if you give them), and the time you agreed.\nWhy: to answer you and keep a record of payments and refunds.\nFor a refund request the server also attaches the order and key details it holds (plan, date issued, payer name and more).\nHow long: on the seller's server, payment and refund requests for 3 years and other requests for 1 year, counted from the day the request last changed.\nYour IP address is not kept with the request. To stop too many requests, a hash made from your IP address stays on the seller's server for up to 1 hour.\nIf you do not agree, you cannot send a request. You can still use the app.",
-      consent: "I have read this and agree",
-      count: "{n} / {max}",
-      send: "Send", sending: "Sending…",
-      sentTitle: "Your request was sent. Copy the request number and the access code. The access code is not shown again, and without it the request cannot be opened again.",
-      ticketId: "Request number", token: "Access code", saved: "Also saved in this browser.", notSaved: "Could not save it in this browser. Please copy it.",
-      openIt: "Open the request", another: "Write another", look: "Open", savedTitle: "Requests saved in this browser", forget: "Remove from list",
-      replyLabel: "Reply", reply: "Send reply", closeIt: "Close request",
-      st: { open: "Waiting for a reply", answered: "Answered", closed: "Closed" },
-      rs: { requested: "Refund requested", approved: "Refund approved", rejected: "Refund declined", done: "Refunded" },
-      rejectReason: "Reason", amount: "Amount", won: " KRW", daysSince: "{n} days since the key was issued",
-      me: "Me", admin: "Seller", created: "Sent", updated: "Changed", newReply: "There is a new reply",
-      err: { cat: "Choose a category.", subject: "The subject must be 1 to 80 characters.", text: "The message must be 1 to 2,000 characters.", contact: "The contact can be up to 120 characters.",
-             order: "That is not an order code (SB-XXXX-XXXX). A refund request needs an order code or a key.", keyId: "That is not a license key or key ID.",
-             depositOrder: "A payment notice needs the order code (SB-XXXX-XXXX).", noOrder: "This order code was not found. Check that it is the code you got on '★ Plans' in the app.",
-             "bad key": "This key could not be checked. Make sure you pasted the whole key. You can also send just the key ID (16 characters).",
-             consent: "Please agree to how your request is kept.", reason: "Choose a reason for the refund.", lang: "Could not send it.", body: "Could not send it.",
-             "too large": "That is too long. Please shorten it and send again.",
-             busy: "Too many requests. Please try again a little later.", busyDay: "Today's request limit is reached. It opens again at 9:00 Korean time (00:00 UTC).",
-             closed503: "Requests are closed for now.",
-             notFound: "Request not found. Check the request number and the access code.",
-             closed409: "It was closed more than 30 days ago and cannot be reopened. Please send a new request.", full: "This request has 30 messages and cannot take more. Please send a new request.",
-             net: "Could not reach the server. Please try again later.", generic: "Something went wrong. Please try again later.", info: "Could not load the support center. Please reload the page later." }
-    }
-  }[L];
+  };
   var STORE = "sb-support-tickets", info = null, current = null;
   var LIM = { subject: 80, text: 2000, contact: 120, thReply: 2000 };   // the server's limits, in characters
 
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = String(text); return e; }
   function fill(s, n) { return s.replace("{n}", String(n)); }
-  function when(iso) { try { return new Date(iso).toLocaleString(L === "en" ? "en-US" : "ko-KR", { dateStyle: "medium", timeStyle: "short" }); } catch (e) { return String(iso || ""); } }
+  function when(iso) { try { return new Date(iso).toLocaleString("ko-KR", { dateStyle: "medium", timeStyle: "short" }); } catch (e) { return String(iso || ""); } }
   function say(node, text, bad) { node.textContent = text || ""; node.className = bad ? "err" : "m"; }
-  function catName(id) { var c = (info && info.categories || []).filter(function (x) { return x.id === id; })[0]; return c ? c[L] : id; }
+  function catName(id) { var c = (info && info.categories || []).filter(function (x) { return x.id === id; })[0]; return c ? c.ko : id; }
   // characters as the server counts them: after trimming, one per code point (an emoji is one, not two)
   function chars(s) { return Array.from(String(s || "").trim()).length; }
   function count(id) {
@@ -327,13 +259,8 @@ button.ghost{background:transparent;color:var(--text);border:1px solid var(--lin
   // static labels
   Array.prototype.forEach.call(document.querySelectorAll("[data-t]"), function (n) { var v = TX[n.getAttribute("data-t")]; if (typeof v === "string") n.textContent = v; });
   document.title = TX.title;
-  var link = $("langLink");
-  link.textContent = TX.other;
-  link.href = L === "en" ? "?lang=ko" : "?lang=en";
-  $("privacyNav").href = $("privacyLink").href = L === "en" ? "/privacy?lang=en" : "/privacy";   // Korean is the policy, English a summary
   // The licence agreement change of 2027-01-01, announced here 30 days ahead (EULA Article 13: the sales page and the
   // app); shown until the end of January 2027 (KST). /terms is the full text as the app shows it.
-  $("termsNav").href = $("termsLink").href = L === "en" ? "/terms?lang=en" : "/terms";
   if (Date.now() < Date.UTC(2027, 0, 31, 15)) {
     TX.termsItems.forEach(function (s) { $("termsList").appendChild(el("li", "", s)); });
     $("terms").hidden = false;
@@ -372,10 +299,10 @@ button.ghost{background:transparent;color:var(--text);border:1px solid var(--lin
     cat.textContent = "";
     // closed for questions: withdrawal stays open (info.refunds), so the form offers the refund request only
     var refundOnly = !info.open && info.refunds === true;
-    (info.categories || []).forEach(function (c) { if (refundOnly && c.id !== "refund") return; var o = el("option", "", c[L]); o.value = c.id; cat.appendChild(o); });
+    (info.categories || []).forEach(function (c) { if (refundOnly && c.id !== "refund") return; var o = el("option", "", c.ko); o.value = c.id; cat.appendChild(o); });
     var reason = $("reason");
     reason.textContent = "";
-    (info.refundReasons || []).forEach(function (c) { var o = el("option", "", c[L]); o.value = c.id; reason.appendChild(o); });
+    (info.refundReasons || []).forEach(function (c) { var o = el("option", "", c.ko); o.value = c.id; reason.appendChild(o); });
     if (!info.open) {
       $("closedNote").hidden = false;
       if (refundOnly) { $("closedNote").setAttribute("data-t", "closedRefunds"); $("closedNote").textContent = TX.closedRefunds; }
@@ -402,7 +329,7 @@ button.ghost{background:transparent;color:var(--text);border:1px solid var(--lin
     if (!$("consent").checked) { say(msg, TX.err.consent, true); return; }
     if (cat === "refund" && !order && !key) { say(msg, TX.refundNeeds, true); return; }
     if (cat === "deposit" && !/^SB-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/.test(order)) { say(msg, TX.err.depositOrder, true); return; }
-    var body = { cat: cat, subject: $("subject").value, text: $("text").value, contact: $("contact").value, lang: L, consent: true };
+    var body = { cat: cat, subject: $("subject").value, text: $("text").value, contact: $("contact").value, lang: "ko", consent: true };
     if (order) body.order = order;
     // a key id alone (16 hex) or the whole key; the whole key goes to the server only to be checked, never kept
     if (/^[0-9a-fA-F]{16}$/.test(key)) body.keyId = key.toLowerCase();
@@ -443,7 +370,7 @@ button.ghost{background:transparent;color:var(--text);border:1px solid var(--lin
     if (t.refund) {
       var parts = [TX.rs[t.refund.status] || t.refund.status];
       if (t.refund.facts && t.refund.facts.daysSinceKey != null) parts.push(fill(TX.daysSince, t.refund.facts.daysSinceKey));
-      if (t.refund.amount != null) parts.push(TX.amount + " " + Number(t.refund.amount).toLocaleString(L === "en" ? "en-US" : "ko-KR") + TX.won);
+      if (t.refund.amount != null) parts.push(TX.amount + " " + Number(t.refund.amount).toLocaleString("ko-KR") + TX.won);
       if (t.refund.rejectReason) parts.push(TX.rejectReason + ": " + t.refund.rejectReason);
       rf.textContent = parts.join(" · "); rf.hidden = false;
     } else rf.hidden = true;
@@ -494,7 +421,7 @@ button.ghost{background:transparent;color:var(--text);border:1px solid var(--lin
   $("thClose").addEventListener("click", function () { act("/support/ticket/close", {}, $("thClose")); });
 
   renderSaved();
-  api("/support/info?lang=" + L).then(function (r) {
+  api("/support/info").then(function (r) {
     if (r.status !== 200) { $("offline").textContent = TX.err.info; $("offline").hidden = false; $("faq").textContent = ""; $("form").hidden = true; return; }
     info = r;
     renderInfo();

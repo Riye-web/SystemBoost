@@ -119,8 +119,9 @@ assert.match(N.id, /^[0-9a-f]{8}$/);
 assert.deepEqual([N.plan, N.oldPrice, N.newPrice, N.variant, N.effective], ["monthly", 2900, 3900, "111", "2026-12-18"]);
 assert.ok(made.text.ko.includes("프로 월간 구독 가격이 2026년 12월 18일 이후 자동 결제부터 2,900원에서 3,900원으로 바뀌어요."), made.text.ko);
 assert.ok(made.text.ko.includes("답하지 않으면 동의한 것으로 보지 않고, 새 가격으로 결제하지 않아요.") && made.text.ko.includes("2026년 12월 17일까지 고를 수 있어요."));
-assert.ok(made.text.en.includes("from ₩2,900 to ₩3,900") && made.text.en.includes("December 18, 2026") && made.text.en.includes("No answer is not taken as agreement"), made.text.en);
-assert.ok(made.email.ko.subject.includes("프로 월간") && made.email.ko.body.includes("- 새 가격: 3,900원") && made.email.en.body.includes("Please choose by December 17, 2026"));
+assert.deepEqual(Object.keys(made.text), ["ko"], "Korean only");
+assert.ok(made.email.ko.subject.includes("프로 월간") && made.email.ko.body.includes("- 새 가격: 3,900원") && made.email.ko.body.includes("2026년 12월 17일까지 골라 주세요"));
+assert.deepEqual(Object.keys(made.email), ["ko"], "Korean only");
 assert.equal((await adm("/price", { ...good, variant: "112" })).http, 409, "one open notice a plan");
 const yearly = await adm("/price", { plan: "yearly", oldPrice: 19900, newPrice: 24900, variant: "122", effective: "2027-01-20" });
 assert.equal(yearly.http, 200);
@@ -129,12 +130,12 @@ clock = T0 + DAY;
 assert.equal((await adm("/price", { ...good, plan: "ultra_monthly", variant: "211", effective: min })).http, 400);
 clock = T0;
 
-// 3. POST /sub/price: the notice of the subscription's own plan, Korean or English, with the holder's answer
+// 3. POST /sub/price: the notice of the subscription's own plan, in Korean, with the holder's answer
 let r = await price(keys[1]);
 assert.deepEqual(Object.keys(r.notice).sort(), ["effective", "id", "newPrice", "oldPrice", "plan", "text"]);
 assert.deepEqual([r.notice.id, r.notice.plan, r.notice.oldPrice, r.notice.newPrice, r.notice.effective, r.choice], [N.id, "monthly", 2900, 3900, "2026-12-18", ""]);
 assert.equal(r.notice.text, made.text.ko);
-assert.equal((await price(keys[1], "en")).notice.text, made.text.en);
+assert.equal((await price(keys[1], "en")).notice.text, made.text.ko, "lang \"en\" from an older app: the Korean text");
 assert.equal((await price(keys[3])).notice.id, yearly.notice.id, "a yearly subscription sees the yearly notice");
 
 // 4. POST /sub/price/choose

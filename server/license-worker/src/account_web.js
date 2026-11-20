@@ -3,8 +3,8 @@
 //    itself, never from the body. "features" also answers GET.
 //  - Pages for the links in mails: /account/verify, /account/reset, /account/link, /account/recovery/cancel. GET only
 //    shows a page with a button (mail scanners open links); the form's POST does the work. No script, a nonce for the
-//    one style, no referrer, the token in the form body (not the address) once the page is open. Korean or English by
-//    ?lang= or Accept-Language. A token is never logged.
+//    one style, no referrer, the token in the form body (not the address) once the page is open. Korean only
+//    (?lang= and Accept-Language are ignored). A token is never logged.
 //  - Before accounts v2 start (ACCOUNTS_V2_FROM, src/accounts_gate.js): legacyWeb(), the /account/* of 2026-11-13.
 import { accounts, cleanEmail } from "./accounts.js";
 import { accountsV2Open } from "./accounts_gate.js";
@@ -82,7 +82,7 @@ export async function keysResend(req, env, ctx, deps = {}) {
   const b = await readJson(req);
   const email = cleanEmail(b.email);
   if (!email) return json({ error: "email" }, 400);
-  const lang = b.lang === "en" ? "en" : "ko", hour = new Date().toISOString().slice(0, 13);
+  const hour = new Date().toISOString().slice(0, 13);
   if (!(await take(env, [{ name: "keys:ip:" + (await tag(env, "ip", ipBucket(req.headers.get("CF-Connecting-IP")))) + ":" + hour, ttl: 3600, max: RESEND.perIp }])))
     return json({ error: "busy" }, 429);
   const mayMail = await take(env, [{ name: "keys:to:" + (await tag(env, "to", email)) + ":" + hour, ttl: 3600, max: RESEND.perAddress }]);
@@ -91,7 +91,7 @@ export async function keysResend(req, env, ctx, deps = {}) {
   const rec = await env.LICENSES.getWithMetadata("lic:" + id);
   const revoked = (await env.LICENSES.get("revoked:" + id)) !== null || !!rec?.metadata?.revoked;
   if (mayMail && key && rec?.value === key && !revoked)
-    sendMail(env, ctx, { to: email, kind: "key_resend", lang, data: { key, plan: rec.metadata?.plan, expires: rec.metadata?.expires } });
+    sendMail(env, ctx, { to: email, kind: "key_resend", data: { key, plan: rec.metadata?.plan, expires: rec.metadata?.expires } });
   return json({ sent: true });
 }
 
@@ -119,12 +119,6 @@ async function take(env, items) {
 
 // ---------------------------------------------------------------- pages for the links in mails
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-function langOf(req, url, form) {
-  const q = form?.get("lang") || url.searchParams.get("lang");
-  if (q === "en" || q === "ko") return q;
-  const al = String(req.headers.get("Accept-Language") || "").toLowerCase();
-  return /^en\b/.test(al) || (!/\bko\b/.test(al) && /\ben\b/.test(al)) ? "en" : "ko";
-}
 
 const TEXT = {
   ko: {
@@ -148,32 +142,11 @@ const TEXT = {
               done: "복구 요청을 취소했어요. 본인이 한 요청이 아니었다면 앱에서 비밀번호를 바꾸고 2단계 인증을 켜세요.",
               closed: "이미 처리됐거나 취소된 요청이에요." },
   },
-  en: {
-    expired: "This link has expired or was already used. Please try again from the app.",
-    unavailable: "This cannot be done right now. Please try again in a while.",
-    busy: "Too many tries. Please try again in a while.",
-    verify: { title: "Confirm your email", lead: "Enter the password you chose in the app and press the button below to finish signing up.", button: "Finish sign-up",
-              p1: "Password", wrong: "The password is not right. Enter the password you chose when signing up in the app. After five wrong tries this link stops working.",
-              done: "You're signed up. Now log in under '◈ Account' in the app with this email address and your password.",
-              already: "This email address already belongs to another account. Log in to that account in the app or use 'Forgot password'." },
-    add: { title: "Link your email", lead: "Pressing the button below links this email address to the account with the ID in the email, and keys bought with this address show in that account. If you did not ask for this, do not press it.", button: "Finish",
-           done: "Your email address is linked. You can now log in with it and get password reset links at it." },
-    reset: { title: "Choose a new password", lead: "Enter the new password twice. Changing it logs you out on every device.",
-             rule: "10 to 72 characters, not your ID or email address (or the part before @), and not a common password.",
-             p1: "New password", p2: "New password again", button: "Change password",
-             mismatch: "The two passwords differ.", weak: "The password does not meet the rules.",
-             done: "Your password was changed. Every device was logged out; log in to the app with the new password." },
-    link: { title: "Link a key to your account", lead: "Press the button below to link the key bought with this email address to the member account that asked. If you did not ask for this, do not press it.",
-            button: "Link", done: "The key is linked to your account. You can see it under '◈ Account' in the app." },
-    cancel: { title: "Cancel the account recovery request", lead: "Press the button below to cancel the recovery request for this account.", button: "Cancel the request",
-              done: "The recovery request was cancelled. If you did not make it, change your password in the app and turn on 2-step verification.",
-              closed: "This request was already decided or cancelled." },
-  },
 };
 
-function html(lang, title, inner, status = 200) {
+function html(title, inner, status = 200) {
   const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
-  const doc = `<!DOCTYPE html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  const doc = `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex"><title>SystemBoost · ${esc(title)}</title>
 <style nonce="${nonce}">
 body{margin:0;background:#0b0b0c;color:#e8e6e3;font-family:system-ui,-apple-system,"Segoe UI","Malgun Gothic",sans-serif;line-height:1.6}
@@ -193,37 +166,37 @@ button{margin-top:18px;background:#FF7A1A;color:#0b0b0c;border:0;border-radius:1
 
 // GET: the page with its button (and, for a reset, the form). POST (form): the work, then what came of it.
 async function page(req, url, env, ctx, deps, which, form) {
-  const lang = langOf(req, url, form), T = TEXT[lang];
+  const T = TEXT.ko;
   const t = String((form ? form.get("t") : url.searchParams.get("t")) || "");
   const add = (form ? form.get("add") : url.searchParams.get("add")) === "1";
   const kind = which === "verify" ? (add ? "add" : "verify") : which === "recovery/cancel" ? "cancel" : which;
   const P = T[kind];
-  const msg = (text, status = 200, cls = "") => html(lang, P.title, `<p${cls ? ` class="${cls}"` : ""}>${esc(text)}</p>`, status);
+  const msg = (text, status = 200, cls = "") => html(P.title, `<p${cls ? ` class="${cls}"` : ""}>${esc(text)}</p>`, status);
   const failed = r => msg(r.error === "expired" ? T.expired : r.error === "already" ? T.verify.already : r.error === "closed" ? P.closed || T.expired
                           : r.error === "busy" || r.error === "locked" ? T.busy : T.unavailable, r.status || 400, "err");
   if (!/^[0-9a-f]{64}$/.test(t)) return msg(T.expired, 400, "err");
   const action = "/account/" + which;
-  const hidden = `<input type="hidden" name="t" value="${esc(t)}"><input type="hidden" name="lang" value="${lang}">${add ? '<input type="hidden" name="add" value="1">' : ""}`;
-  const resetForm = (err = "") => html(lang, P.title, `<p>${esc(P.lead)}</p><p class="m">${esc(P.rule)}</p>${err ? `<p class="err">${esc(err)}</p>` : ""}
+  const hidden = `<input type="hidden" name="t" value="${esc(t)}">${add ? '<input type="hidden" name="add" value="1">' : ""}`;
+  const resetForm = (err = "") => html(P.title, `<p>${esc(P.lead)}</p><p class="m">${esc(P.rule)}</p>${err ? `<p class="err">${esc(err)}</p>` : ""}
 <form method="post" action="${action}">${hidden}
 <label for="p1">${esc(P.p1)}</label><input id="p1" name="password" type="password" autocomplete="new-password" minlength="10" maxlength="72" required>
 <label for="p2">${esc(P.p2)}</label><input id="p2" name="password2" type="password" autocomplete="new-password" minlength="10" maxlength="72" required>
 <button type="submit">${esc(P.button)}</button></form>`, err ? 400 : 200);
 
   // a sign-up's verify page asks for the password chosen in the app
-  const verifyForm = (err = "") => html(lang, P.title, `<p>${esc(P.lead)}</p>${err ? `<p class="err">${esc(err)}</p>` : ""}
+  const verifyForm = (err = "") => html(P.title, `<p>${esc(P.lead)}</p>${err ? `<p class="err">${esc(err)}</p>` : ""}
 <form method="post" action="${action}">${hidden}
 <label for="p1">${esc(P.p1)}</label><input id="p1" name="password" type="password" autocomplete="current-password" maxlength="72" required>
 <button type="submit">${esc(P.button)}</button></form>`, err ? 400 : 200);
 
-  const body = fromRequest(req, url, { t, lang });
+  const body = fromRequest(req, url, { t });
   if (!form) {
     if (which === "reset") {
       const r = await accounts(env, "reset_peek", body, ctx, deps);
       return r.error ? failed(r) : resetForm();
     }
     if (kind === "verify") return verifyForm();
-    return html(lang, P.title, `<p>${esc(P.lead)}</p><form method="post" action="${action}">${hidden}<button type="submit">${esc(P.button)}</button></form>`);
+    return html(P.title, `<p>${esc(P.lead)}</p><form method="post" action="${action}">${hidden}<button type="submit">${esc(P.button)}</button></form>`);
   }
   if (which === "reset") {
     const p1 = String(form.get("password") || ""), p2 = String(form.get("password2") || "");

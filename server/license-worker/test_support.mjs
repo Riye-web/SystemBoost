@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { createHash, createHmac, generateKeyPairSync } from "node:crypto";
 import worker from "./src/index.js";
 import { DatabaseSync } from "node:sqlite";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { ARTICLE_9, DEFAULT_FAQ, LIMITS, PRIVACY_EMPTY, _forgetMemory, ipBucket, listRow } from "./src/support.js";
 import { FEED, FEED_KINDS, Stats } from "./src/stats.js";
 import { build as buildPrivacy, markdownToHtml } from "./build_privacy.mjs";
@@ -148,7 +148,7 @@ assert.deepEqual(info.faq, DEFAULT_FAQ.ko, "no FAQ in the dashboard: the built-i
 assert.equal(info.faqDefault, true);
 assert.deepEqual(info.categories.map(c => c.id), ["pay", "deposit", "refund", "bug", "howto", "idea", "other"]);   // 0.8.14: deposit (입금 확인)
 assert.deepEqual(info.refundReasons.map(c => c.id), ["change_mind", "not_working", "double", "other"]);
-assert.ok(info.categories.every(c => c.ko && c.en) && info.refundReasons.every(c => c.ko && c.en));
+assert.ok(info.categories.every(c => c.ko && !("en" in c)) && info.refundReasons.every(c => c.ko && !("en" in c)), "Korean only");
 assert.deepEqual(Object.values(info.seller), ["", "", "", "", "", "", "", ""], "no business registration yet: empty seller fields");
 assert.match(info.policy.title, /제9조/);
 assert.equal(info.policy.items.length, 5);
@@ -167,10 +167,15 @@ for (const [lang, file] of [["ko", "eula.txt"]]) {
   assert.deepEqual(ARTICLE_9[lang].items, items, file + ": ARTICLE_9 matches Article 9 word for word");
   assert.ok(!/시험 키|trial key/.test(items.join(" ")), file + ": no trial key the seller does not offer");
 }
-assert.deepEqual((await j("/support/info?lang=en")).policy, ARTICLE_9.en);
-assert.deepEqual((await j("/support/info?lang=en")).faq, DEFAULT_FAQ.en);
-assert.equal(DEFAULT_FAQ.ko.length, DEFAULT_FAQ.en.length);
-for (const f of [...DEFAULT_FAQ.ko, ...DEFAULT_FAQ.en]) assert.ok(f.q.length <= LIMITS.faqQ && f.a.length <= LIMITS.faqA && DEFAULT_FAQ.ko.length <= LIMITS.faq);
+// Korean only: ?lang=en (and the app's old "en") answers in Korean; there is no English FAQ, article or category
+{
+  const en = await j("/support/info?lang=en"), ko = await j("/support/info");
+  delete en.http; delete ko.http;
+  assert.deepEqual(en, ko, "/support/info?lang=en is the Korean answer");
+  assert.deepEqual([en.policy, en.faq], [ARTICLE_9.ko, DEFAULT_FAQ.ko]);
+  assert.deepEqual([Object.keys(ARTICLE_9), Object.keys(DEFAULT_FAQ)], [["ko"], ["ko"]]);
+}
+for (const f of DEFAULT_FAQ.ko) assert.ok(f.q.length <= LIMITS.faqQ && f.a.length <= LIMITS.faqA && DEFAULT_FAQ.ko.length <= LIMITS.faq);
 assert.equal((await j("/support/nothing")).http, 404);
 
 // ---------------------------------------------------------------- create: validation, consent
@@ -232,7 +237,7 @@ for (const [k, v] of kv) assert.ok(!String(v).includes(t1.token) && !k.includes(
 assert.equal(s1.subject, "a bc", "control characters out, bidi overrides out");
 assert.equal(s1.messages[0].text, "첫 줄\n둘째 줄 <script>alert(1)</script>", "text is kept as data, newlines normalised");
 assert.equal(s1.order, "SB-ABCD-EFGH");
-assert.equal(s1.lang, "en");
+assert.equal(s1.lang, "ko", "an app before 0.8.21 may still send \"en\": the ticket is Korean");
 assert.equal(s1.status, "open");
 assert.ok(s1.consentAt && s1.created === s1.updated);
 assert.equal(s1.account, undefined);
@@ -628,7 +633,7 @@ assert.ok(bk.keys.every(k => k.owned), "a signed key shows its order: every key 
 dn = await adm("/support/refund", { id: tb.id, action: "done", amount: "19,800" });
 assert.deepEqual([...dn.revoked].sort(), [...bundle.ids].sort());
 assert.equal(dn.ticket.refund.amount, 19800);
-assert.match(dn.ticket.messages.at(-1).text, /refund is complete.*blocked/, "the default message in the buyer's language");
+assert.match(dn.ticket.messages.at(-1).text, /환불을 마쳤어요\. 환불한 키는 막았어요/, "the default message in Korean, also for a ticket sent with \"en\"");
 for (const id of bundle.ids) assert.equal((await j("/check?id=" + id)).revoked, true);
 assert.equal((await j("/check?id=" + other.id)).revoked, false, "keys of other orders stay");
 assert.equal((await adm("/orders?status=refunded")).count.refunded, 2);
@@ -1020,7 +1025,13 @@ assert.ok(csp.includes("default-src 'none'") && csp.includes("frame-ancestors 'n
 assert.equal(h1.headers.get("x-frame-options"), "DENY");
 const html = await h1.text(), htmlEn = await h2.text();
 assert.match(html, /^<!DOCTYPE html>\s*<html lang="ko">/);
-assert.ok(htmlEn.includes("<html lang=\"en\">"));
+// Korean only: ?lang=en is the same Korean page (only the nonce differs); no English text, no language link
+assert.equal(htmlEn.replace(/nonce="[^"]+"/g, ""), html.replace(/nonce="[^"]+"/g, ""), "/help?lang=en is the Korean page");
+assert.ok(!/langLink|lang=en|"en"|English|This page needs JavaScript|Send a request|Republic of Korea/.test(html), "/help has no English");
+{
+  const h3 = await call("/help", { headers: { "Accept-Language": "en-US,en;q=0.9" } });
+  assert.equal((await h3.text()).replace(/nonce="[^"]+"/g, ""), html.replace(/nonce="[^"]+"/g, ""), "/help for an English browser is the Korean page");
+}
 assert.ok(!html.includes("__NONCE__"));
 assert.equal([...html.matchAll(/<(script|style) nonce="([^"]+)"/g)].filter(m => m[2] === nonce).length, 2, "the script and the style carry this request's nonce");
 assert.notEqual(/'nonce-([^']+)'/.exec(h2.headers.get("content-security-policy"))[1], nonce, "a new nonce every time");
@@ -1042,12 +1053,12 @@ for (const id of ["subject", "text", "contact", "thReply"]) {
 }
 assert.ok(script.includes("Array.from(String(s || \"\").trim()).length") && script.includes("subject: " + LIMITS.subject + ", text: " + LIMITS.text + ", contact: " + LIMITS.contact + ", thReply: " + LIMITS.text),
           "counted in characters like the server, with the server's limits");
-assert.match(html, /<noscript><div class="box warn"><p>이 페이지는 JavaScript가 있어야 동작해요\.[^<]*<\/p><p>This page needs JavaScript\./, "a line for browsers without JavaScript");
-assert.ok(script.includes('r.scope === "day" ? TX.err.busyDay : TX.err.busy') && script.includes("한국 시간 오전 9시에 다시 열려요") && script.includes("9:00 Korean time (00:00 UTC)"));
+assert.match(html, /<noscript><div class="box warn"><p>이 페이지는 JavaScript가 있어야 동작해요\.[^<]*<\/p><\/div><\/noscript>/, "a line for browsers without JavaScript");
+assert.ok(script.includes('r.scope === "day" ? TX.err.busyDay : TX.err.busy') && script.includes("한국 시간 오전 9시에 다시 열려요"));
 assert.ok(script.includes("동의하지 않으면 문의를 보낼 수 없어요. 앱은 그대로 쓸 수 있어요.") && script.includes("마지막으로 바뀐 날부터") && !/되돌릴 수 없|one-way/.test(html + JSON.stringify(DEFAULT_FAQ)),
           "consent: refusing is possible, retention from the last change, no claim that the IP hash cannot be reversed");
 assert.ok(html.includes('<a id="privacyNav" href="/privacy" data-t="privacy"></a>') && html.includes('<a id="privacyLink" href="/privacy" data-t="privacyMore"></a>') &&
-          script.includes('privacyMore: "자세한 내용은 개인정보 처리방침에서 볼 수 있어요"') && script.includes('L === "en" ? "/privacy?lang=en" : "/privacy"'),
+          script.includes('privacyMore: "자세한 내용은 개인정보 처리방침에서 볼 수 있어요"') && !script.includes('$("privacyNav").href'),
           "/help links the privacy policy next to the consent and in the menu");
 
 // ---------------------------------------------------------------- /privacy
@@ -1098,16 +1109,20 @@ assert.ok(html.includes('<a id="privacyNav" href="/privacy" data-t="privacy"></a
   assert.ok((await page()).html.includes("개인정보 보호책임자: " + empty) && !(await page()).html.includes("개인정보 보호책임자: DOKKU"),
             "no representative: the blank mark, never the business name (the officer is a person)");
 
-  // ?lang=en: an English summary that says the Korean text is the policy, with the same blanks
+  // Korean only: no English summary; ?lang=en and an English browser get the Korean policy, with the same blanks
+  const nn = s => s.replace(/nonce="[^"]+"/g, "");
   const pe = await page("?lang=en");
   assert.equal(pe.r.status, 200);
-  assert.match(pe.html, /^<!DOCTYPE html>\s*<html lang="en">/);
-  assert.ok(pe.html.includes("The Korean text is the policy") && pe.html.includes('<a href="/privacy" hreflang="ko">') && pe.html.includes('<a href="/help?lang=en">'));
-  assert.ok(pe.html.includes("Effective date: December 14, 2026") && pe.html.includes('Privacy officer: <span class="blank">' + PRIVACY_EMPTY.en + "</span>") &&
-            pe.html.includes("Email: help@example.com") && pe.html.includes("Database location: 대한민국"));
-  assert.ok(p1.html.includes('<a href="/privacy?lang=en" hreflang="en">English summary</a>'));
+  assert.equal(nn(pe.html), nn((await page()).html), "?lang=en is the Korean policy");
+  const pa = await call("/privacy", { headers: { "Accept-Language": "en-US,en;q=0.9" } });
+  assert.equal(nn(await pa.text()), nn(pe.html), "an English browser gets the Korean policy");
+  assert.match(pe.html, /^<!DOCTYPE html>\s*<html lang="ko">/);
+  assert.ok(pe.html.includes("시행일: 2026년 12월 14일") && pe.html.includes("메일: help@example.com") && pe.html.includes("<td>대한민국</td>"));
+  assert.ok(!/lang=en|hreflang|English|Effective date/.test(p1.html + pe.html), "no English summary and no link to one");
+  assert.ok(p1.html.includes('<nav><a href="/help">고객센터</a></nav>'), "the header links /help only");
+  assert.ok(!existsSync(new URL("./privacy/privacy.en.md", import.meta.url)), "the English summary's source is gone");
   await adm("/support/config", { ...saved, privacy: { dbRegion: "", effectiveDate: "" } });
-  assert.ok((await page("?lang=en")).html.includes("Effective date: January 1, 2026"), "no 시행일: the start of accounts v2");
+  assert.ok((await page("?lang=en")).html.includes("시행일: 2026년 1월 1일"), "no 시행일: the start of accounts v2");
   assert.equal((await call("/privacy", { method: "POST" })).status, 404, "GET only");
   await adm("/support/config", saved);
 }

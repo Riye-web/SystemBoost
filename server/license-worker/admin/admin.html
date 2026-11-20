@@ -713,8 +713,7 @@ let priceNow = null;
 const CHOICE_KO = { agree: "동의", cancel: "해지" };
 $("prPlan").innerHTML = CARD_PLANS.map(p => `<option value="${p}">${esc(PLAN[p])}</option>`).join("");
 function showPriceText(r) {
-  $("prOut").value = ["[앱 문구]", r.text.ko, "", "[App text, English]", r.text.en, "",
-                      "[메일 초안] 제목: " + r.email.ko.subject, r.email.ko.body, "", "[E-mail draft] Subject: " + r.email.en.subject, r.email.en.body].join("\n");
+  $("prOut").value = ["[앱 문구]", r.text.ko, "", "[메일 초안] 제목: " + r.email.ko.subject, r.email.ko.body].join("\n");
   $("prOut").classList.remove("hide");
 }
 function priceRow(n, c) {
@@ -1670,7 +1669,7 @@ function renderTk(t, keepDraft) {
                 (t.keyId && !t.keyVerified ? `<div class="err">${esc(UNOWNED)}</div>` : t.keyVerified ? '<div class="mut">구매자가 키 전체를 보내 소유를 확인했어요</div>' : "") : "—"],
     ["아이디", t.account ? `<code>${esc(t.account)}</code>` : "—"],
     ["앱 정보", dg ? esc(dg) : '<span class="mut">보내지 않음</span>'],
-    ["언어", t.lang === "en" ? "English" : "한국어"],
+    ["언어", t.lang === "en" ? "영어 (0.8.21 이전 앱)" : "한국어"],
     ["문의", esc(when(t.created)) + " · 마지막 변경 " + esc(when(t.updated))],
   ]);
   const thread = msgs.map(m => `<div class="tkMsg${m.from === "admin" ? " admin" : ""}"><div class="h">${m.from === "admin" ? "판매자 (나)" : "구매자"} · ${esc(when(m.at))}</div><div class="b">${esc(m.text)}</div></div>`).join("");
@@ -2174,9 +2173,9 @@ function demoApi(path, b) {
                    msg("admin", -1.4, "환불 요청을 승인했어요. 환불을 마치면 여기로 알려 드릴게요.")],
         refund: { status: "approved", reason: "change_mind", asked: d(-1.5), decidedAt: d(-1.4), method: "card",
                   facts: { plan: "ultra_monthly", issued: d(-1.6), expires: d(32.4), src: "subscription", sub: "1048576", order: "SB-QW3R-T8YU", orderStatus: "approved", daysSinceKey: 1 } } },
-      { id: "T-K2PL-7GAT", cat: "howto", subject: "Can I use one key on my laptop too?", status: "closed", created: d(-9), updated: d(-8), consentAt: d(-9), lang: "en", contact: "alex@example.com", unreadUser: false,
-        messages: [msg("user", -9, "I bought Pro yearly for my desktop. Can I use the same key on my laptop?"),
-                   msg("admin", -8.5, "Hi, this is SystemBoost. One key works on one PC, so the laptop needs its own key."), msg("user", -8.2, "Got it, thanks!")] }];
+      { id: "T-K2PL-7GAT", cat: "howto", subject: "노트북에서도 같은 키를 쓸 수 있나요?", status: "closed", created: d(-9), updated: d(-8), consentAt: d(-9), lang: "ko", contact: "minji@example.com", unreadUser: false,
+        messages: [msg("user", -9, "데스크톱용으로 프로 연간을 샀어요. 노트북에서도 같은 키를 쓸 수 있나요?"),
+                   msg("admin", -8.5, "안녕하세요, SystemBoost예요. 키 하나는 PC 한 대에만 써요. 노트북에는 키가 하나 더 필요해요."), msg("user", -8.2, "알겠어요, 고마워요!")] }];
     demo.supCfg = { seller: { name: "SystemBoost", rep: "", address: "", bizNo: "", mailOrderNo: "", email: "help@systemboost.example", phone: "", hours: "평일 10:00~18:00" },
       privacy: { dbRegion: "", effectiveDate: "" }, notice: "", refundDays: 7, open: true,
       faq: [{ q: "키는 PC 몇 대에 쓸 수 있나요?", a: "키 하나는 PC 한 대에만 써요. 여러 대에 쓰려면 PC마다 키가 하나씩 필요해요." },
@@ -2277,8 +2276,8 @@ function demoApi(path, b) {
   }
   if (p.startsWith("/price")) {   // like GET/POST /admin/api/price*, with short texts
     const kd = n => new Date(Date.now() + 9 * 36e5 + n * 864e5).toISOString().slice(0, 10), today = kd(0), min = kd(30);
-    const txt = n => ({ text: { ko: `${PLAN[n.plan]} 구독 가격이 ${n.effective} 이후 자동 결제부터 ${num(n.oldPrice)}원에서 ${num(n.newPrice)}원으로 바뀌어요. (시연)`, en: "(demo) The price changes." },
-                        email: { ko: { subject: "[SystemBoost] 구독 가격 변경 안내 (시연)", body: "(시연)" }, en: { subject: "[SystemBoost] Subscription price change (demo)", body: "(demo)" } } });
+    const txt = n => ({ text: { ko: `${PLAN[n.plan]} 구독 가격이 ${n.effective} 이후 자동 결제부터 ${num(n.oldPrice)}원에서 ${num(n.newPrice)}원으로 바뀌어요. (시연)` },
+                        email: { ko: { subject: "[SystemBoost] 구독 가격 변경 안내 (시연)", body: "(시연)" } } });
     demo.price = demo.price || [{ id: "a1b2c3d4", plan: "monthly", oldPrice: 2900, newPrice: 3900, variant: "111", effective: kd(-1), created: new Date().toISOString(),
       choices: [{ sub: "1043", choice: "agree", at: new Date(Date.now() - 20 * 864e5).toISOString(), key: "c0ffee0123456789" },
                 { sub: "1051", choice: "cancel", at: new Date(Date.now() - 25 * 864e5).toISOString(), key: "0ddba11012345678", cancelled: true }] }];

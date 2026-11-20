@@ -58,14 +58,14 @@ assert.ok(doc.head.includes("&lt;b&gt;") && doc.body.includes('<p class="em">1. 
 for (const bad of ["### 소제목", " 들여쓴 줄", "# 제목"]) assert.throws(() => textToHtml(Array.from({ length: 10 }, (_, i) => "## 제" + i + "조").join("\n") + "\n" + bad), Error, bad);
 assert.throws(() => textToHtml("## 제1조\n본문"), /fewer than 10/);
 
-// 4. /help announces the change and links the full text, in both languages
-for (const [path, link, n] of [["/help", "/terms", 11], ["/help?lang=en", "/terms?lang=en", 11]]) {
+// 4. /help announces the change and links the full text; Korean only (?lang=en is the same page)
+for (const [path, n] of [["/help", 11], ["/help?lang=en", 11]]) {
   const html = await (await get(path)).text();
-  assert.ok(html.includes('<div id="terms" class="box terms" hidden>') && html.includes('id="termsNav" href="/terms"'), path + ": the notice box and the link");
-  assert.ok(html.includes('$("termsNav").href = $("termsLink").href = L === "en" ? "/terms?lang=en" : "/terms"'), path + ": " + link);
+  assert.ok(html.includes('<div id="terms" class="box terms" hidden>') && html.includes('id="termsNav" href="/terms"') && html.includes('id="termsLink" href="/terms"'), path + ": the notice box and the links");
+  assert.ok(!/lang=en|termsNav"\)\.href/.test(html), path + ": the links stay on the Korean /terms");
   assert.ok(html.includes("Date.now() < Date.UTC(2027, 0, 31, 15)"), "shown until the end of January 2027 (KST)");
   const lists = [...html.matchAll(/termsItems: \[([\s\S]*?)\]/g)].map(m => (m[1].match(/^\s*"/gm) || []).length);
-  assert.deepEqual(lists, [n, n], path + ": eleven changed articles in Korean and in English");
+  assert.deepEqual(lists, [n], path + ": eleven changed articles, in Korean only");
 }
 // every article the agreement names for 2027-01-01 is in the Korean notice
 const help = await (await get("/help")).text();

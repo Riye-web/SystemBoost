@@ -114,7 +114,7 @@ const unlock = id => run("UPDATE public.accounts SET fails = 0, fail_at = NULL, 
 // mails: the newest to an address, its kind (by subject), and the link in it
 const mailsTo = to => mails.filter(m => m.to.length === 1 && m.to[0] === to);
 const lastTo = to => mailsTo(to).at(-1);
-const subjects = Object.fromEntries(MAIL_KINDS.map(k => [k, [render(k, "ko", {}).subject, render(k, "en", {}).subject]]));
+const subjects = Object.fromEntries(MAIL_KINDS.map(k => [k, [render(k, {}).subject]]));
 const kindOf = m => MAIL_KINDS.find(k => subjects[k].includes(m?.subject));
 const linkIn = m => {
   const x = /https:\/\/lic\.example\/account\/([a-z/]+)\?t=([0-9a-f]{64})((?:&[a-z]+=[a-z0-9]+)*)/.exec(m?.text || "");
@@ -202,8 +202,11 @@ assert.equal(p.headers.get("x-frame-options"), "DENY");
 assert.ok(p.html.includes(`name="t" value="${l.t}"`) && p.html.includes("가입 완료") && p.html.includes('name="password" type="password"'));
 assert.ok(!/<script/i.test(p.html));
 assert.equal(await count("SELECT COUNT(*) AS n FROM public.accounts WHERE email = $1", ALICE), 0);
-assert.match((await page(l.url, null, { headers: { "Accept-Language": "en-US,en;q=0.9" } })).html, /Finish sign-up/);
-assert.match((await page(l.url.replace("?", "?lang=en&"))).html, /Finish sign-up/);
+// Korean only: an English browser or ?lang=en gets the same Korean page
+for (const q of [await page(l.url, null, { headers: { "Accept-Language": "en-US,en;q=0.9" } }), await page(l.url.replace("?", "?lang=en&"))]) {
+  assert.ok(q.html.includes('<html lang="ko">') && q.html.includes("가입 완료"));
+  assert.ok(!/Finish sign-up|lang="en"|name="lang"/.test(q.html));
+}
 // the link alone does not make the account: the password chosen in the app is asked for too
 p = await page("/account/verify", { t: l.t, lang: "ko", password: "not-alices-pw-1" });
 assert.equal(p.status, 400);
@@ -419,31 +422,33 @@ for (let i = 0; i < 3; i++) aliceSessions.push((await send("/account/login", { e
 assert.deepEqual(await send("/account/forgot", { email: "ALICE@example.com", lang: "en" }), { status: 200, sent: true });
 m = lastTo(ALICE);
 assert.equal(kindOf(m), "reset");
-assert.match(m.subject, /Password reset link/);
+assert.match(m.subject, /비밀번호 재설정 링크/);   // a "lang": "en" from an older app still gets the Korean mail
+assert.ok(m.html.includes('<html lang="ko">') && !/Password reset|If this wasn't you/.test(m.text));
 l = linkIn(m);
 assert.equal(l.path, "reset");
-assert.equal(l.query, "&lang=en");
+assert.equal(l.query, "");   // no &lang=en in the link
 let rt = await one("SELECT * FROM public.account_tokens WHERE kind = 'reset' AND account = $1", alice.id);
 assert.ok(Math.abs(new Date(rt.expires) - new Date(rt.created) - 30 * 60e3) < 5000);
 const mailCount = mails.length;
 assert.deepEqual(await send("/account/forgot", { email: "nobody@example.com" }), { status: 200, sent: true });   // the same reply
 assert.equal(mails.length, mailCount);
 assert.deepEqual(await send("/account/forgot", { email: "nope" }), { status: 400, error: "email" });
-p = await page(l.url);
+p = await page(l.url + "&lang=en", null, { headers: { "Accept-Language": "en" } });
 assert.equal(p.status, 200);
-assert.ok(p.html.includes('type="password"') && p.html.includes("Choose a new password") && p.html.includes(`value="${l.t}"`));
+assert.ok(p.html.includes('type="password"') && p.html.includes("새 비밀번호 정하기") && p.html.includes(`value="${l.t}"`));
+assert.ok(!/Choose a new password|lang="en"/.test(p.html));
 assert.equal(await count("SELECT COUNT(*) AS n FROM public.account_tokens WHERE kind = 'reset' AND account = $1", alice.id), 1);   // GET spends nothing
 p = await page("/account/reset", { t: l.t, lang: "en", password: "brand-new-pw-11", password2: "brand-new-pw-12" });
 assert.equal(p.status, 400);
-assert.match(p.html, /differ/);
+assert.match(p.html, /두 비밀번호가 달라요/);
 p = await page("/account/reset", { t: l.t, lang: "en", password: "password123", password2: "password123" });
 assert.equal(p.status, 400);
-assert.match(p.html, /does not meet/);
+assert.match(p.html, /비밀번호가 규칙에 맞지 않아요/);
 p = await page("/account/reset", { t: l.t, lang: "en", password: ALICE, password2: ALICE });
 assert.equal(p.status, 400);
 p = await page("/account/reset", { t: l.t, lang: "en", password: "brand-new-pw-11", password2: "brand-new-pw-11" });
 assert.equal(p.status, 200);
-assert.match(p.html, /password was changed/);
+assert.match(p.html, /비밀번호를 바꿨어요/);
 assert.equal(kindOf(lastTo(ALICE)), "password_changed");
 for (const t of aliceSessions) assert.equal((await send("/account/me", undefined, t)).error, "session");   // every session ends
 assert.equal((await send("/account/login", { email: ALICE, password: PWA })).error, "wrong");
@@ -525,11 +530,11 @@ assert.ok(m.text.includes(issued.id) && !m.text.includes(issued.key));
 l = linkIn(m);
 assert.equal(l.path, "link");
 assert.deepEqual((await send("/account/keys", undefined, dave.token)).keys, []);
-assert.ok((await page(l.url)).html.includes("Link"));
+assert.ok((await page(l.url)).html.includes("연결하기"));
 assert.deepEqual((await send("/account/keys", undefined, dave.token)).keys, []);   // GET links nothing
 p = await page("/account/link", { t: l.t, lang: "en" });
 assert.equal(p.status, 200);
-assert.match(p.html, /linked to your account/);
+assert.match(p.html, /키를 계정에 연결했어요/);
 let ks = (await send("/account/keys", undefined, dave.token)).keys;
 assert.equal(ks.length, 1);
 assert.deepEqual(Object.keys(ks[0]).sort(), ["expires", "id", "issued", "key", "plan", "revoked"]);
@@ -556,6 +561,7 @@ m = mails.at(-1);
 assert.equal(mails.length, n0 + 1);
 assert.equal(kindOf(m), "key_resend");
 assert.ok(m.text.includes(issued.key) && m.to[0] === BUYER);
+assert.ok(m.subject.includes("라이선스 키를 다시 보내 드려요") && !/license key|Plan:/i.test(m.text));   // "lang": "en" is ignored
 assert.deepEqual(await send("/keys/resend", { email: "nobody@example.com" }), { status: 200, sent: true });
 assert.equal(mails.length, n0 + 1);
 assert.deepEqual(await send("/keys/resend", { email: "x" }), { status: 400, error: "email" });
@@ -697,13 +703,14 @@ assert.deepEqual(await signupEmail(DAVE, "dave-again-pw-1"), { status: 200, sent
 assert.equal(kindOf(lastTo(DAVE)), "verify");
 
 // ---------------------------------------------------------------------------------------------- mail: templates, caps
-for (const kind of MAIL_KINDS) for (const lang of ["ko", "en"]) {
-  const r = render(kind, lang, { link: "https://lic.example/account/x?t=" + "0".repeat(64), key: "k.k", keyId: "0123456789abcdef", id: "someone", left: 3, due: Date.now() });
+for (const kind of MAIL_KINDS) {
+  const r = render(kind, { link: "https://lic.example/account/x?t=" + "0".repeat(64), key: "k.k", keyId: "0123456789abcdef", id: "someone", left: 3, due: Date.now() });
   assert.ok(r.subject.startsWith("[SystemBoost]"), kind);
-  assert.ok(r.text.includes(lang === "en" ? "If this wasn't you" : "본인이 아니라면"), kind + " " + lang);
+  assert.ok(r.text.includes("본인이 아니라면") && r.html.includes('<html lang="ko">'), kind);
+  assert.ok(!/If this wasn't you|SystemBoost app|UTC/.test(r.text), kind);   // Korean only
   assert.ok(r.html.includes("#FF7A1A") && r.html.includes("#0b0b0c"), kind);
 }
-assert.ok(!render("new_device", "ko", { device: "<script>x</script>" }).html.includes("<script>x"));
+assert.ok(!render("new_device", { device: "<script>x</script>" }).html.includes("<script>x"));
 freshLimits();
 const capped = { ...env, MAIL_DAY: "2" };
 n0 = mails.length;

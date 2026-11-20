@@ -22,7 +22,7 @@ export { Stats } from "./stats.js";
 //                                expired one); GET /renew?sub=<id> (apps up to 0.8.11) gets nothing
 //   POST /subscription/change {key, plan}
 //                                plan change of a card subscription (Lemon Squeezy), asked by the holder of its key
-//   POST /sub/price {key, lang?}  the price increase notice for the key's card subscription, and its holder's answer
+//   POST /sub/price {key}        the price increase notice for the key's card subscription, and its holder's answer
 //   POST /sub/price/choose {key, id, choice}
 //                                agree to the new price, or cancel the subscription ("price increase" below)
 //   GET  /status                 {sales, pay:{monthly,yearly}} - the app enables "결제하기" only for plans
@@ -34,7 +34,7 @@ export { Stats } from "./stats.js";
 //   GET  /check?id=<key id>      {revoked} - the app asks this at start (offline = keeps working)
 //   POST /ping                   usage statistics from a running app -> {next: seconds until the next ping}
 //   /support/*, GET /help        customer support and refund requests (src/support.js, src/help_page.js)
-//   GET  /privacy                the privacy policy (?lang=en: an English summary), src/privacy_page.js; before accounts v2
+//   GET  /privacy                the privacy policy, Korean only (?lang=en: the same page), src/privacy_page.js; before accounts v2
 //                                start (ACCOUNTS_V2_FROM) the policy of then, src/privacy_prev_page.js, and ?next=1 the new one
 //   GET  /terms                  the licence agreement as the app shows it, Korean only (?lang=en: the same page), src/terms_page.js
 //   GET  /admin                  owner dashboard (HTML); its API is /admin/api/* with
@@ -614,10 +614,10 @@ async function lsSetVariant(env, sub, variant, extra = {}) {
 // a notice in the dashboard (POST /admin/api/price): the plan, its old and new price (원), the Lemon Squeezy product
 // (variant) at the new price and the day (KST) the price changes, at least PRICE_NOTICE_DAYS after today (KST).
 // Nothing is sent: the dashboard gets the app's text and an e-mail draft the seller sends by hand.
-//   POST /sub/price {key, lang?} -> {notice: {id, plan, oldPrice, newPrice, effective, text} | null, choice: "" | "agree" | "cancel"}
+//   POST /sub/price {key} -> {notice: {id, plan, oldPrice, newPrice, effective, text} | null, choice: "" | "agree" | "cancel"}
 //     the notice for the plan the key's subscription is on, until the day before it takes effect (a subscription
 //     that ended gets null unless it answered). 403 {"error":"key"} for anything but a held card subscription key.
-//     Reads only. text is Korean, or English with lang "en".
+//     Reads only. text is Korean (a "lang" in the body, sent by apps before 0.8.21, is ignored).
 //   POST /sub/price/choose {key, id, choice: "agree" | "cancel"} -> {ok: true, choice, cancelled?}
 //     one KV write (pricechoice:<id>:<sub>), counted in the day's public share. "cancel" also stops the subscription
 //     at Lemon Squeezy (cancelSubscription: it runs to the end of the paid period; cancelled false = the seller has
@@ -632,7 +632,6 @@ const PRICE_MAX = 20;                              // notices kept in config:pri
 const PRICE_MAX_WON = 10000000;
 const PRICE_CHOICE_TTL = 60 * 60 * 24 * 365 * 3;  // the answers, kept three years
 const PRICE_ID = /^[0-9a-f]{8}$/;
-const PLAN_EN = p => ({ premium: "Pro", ultra: "Ultra", biz: "Business" }[tierOf(p)]) + " " + periodOf(p);
 async function priceNotices(env) {
   try { const a = JSON.parse((await env.LICENSES.get("config:price_notices")) || "[]"); return Array.isArray(a) ? a : []; }
   catch { return []; }
@@ -640,15 +639,10 @@ async function priceNotices(env) {
 const won = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 const dayBefore = d => new Date(Date.parse(d + "T00:00:00Z") - 864e5).toISOString().slice(0, 10);
 const koDate = d => { const [y, m, x] = d.split("-").map(Number); return `${y}년 ${m}월 ${x}일`; };
-const enDate = d => new Date(d + "T00:00:00Z").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
 // The words the app shows: the change, both answers and what each does, and that silence is not consent.
-function priceText(n, lang) {
+function priceText(n) {
   const last = dayBefore(n.effective);
-  return lang === "en"
-    ? `The ${PLAN_EN(n.plan)} subscription price changes from ₩${won(n.oldPrice)} to ₩${won(n.newPrice)} for automatic payments on or after ${enDate(n.effective)}. ` +
-      `If you agree, you keep using it at the new price. If you do not, you can cancel and keep using what you already paid for until it ends. ` +
-      `No answer is not taken as agreement, and nothing is charged at the new price without it. You can choose until ${enDate(last)}.`
-    : `${PLANS[n.plan]} 구독 가격이 ${koDate(n.effective)} 이후 자동 결제부터 ${won(n.oldPrice)}원에서 ${won(n.newPrice)}원으로 바뀌어요. ` +
+  return `${PLANS[n.plan]} 구독 가격이 ${koDate(n.effective)} 이후 자동 결제부터 ${won(n.oldPrice)}원에서 ${won(n.newPrice)}원으로 바뀌어요. ` +
       `동의하면 새 가격으로 계속 쓸 수 있어요. 동의하지 않으면 해지할 수 있고, 이미 결제한 기간은 끝날 때까지 써요. ` +
       `답하지 않으면 동의한 것으로 보지 않고, 새 가격으로 결제하지 않아요. ${koDate(last)}까지 고를 수 있어요.`;
 }
@@ -661,12 +655,6 @@ function priceEmail(n) {
                 `새 가격으로 결제하려면 먼저 동의를 받아야 해요. SystemBoost 앱에서 동의하거나 해지할 수 있어요. 동의하면 새 가격으로 계속 쓸 수 있고, ` +
                 `해지하면 이미 결제한 기간이 끝날 때까지 쓸 수 있어요. 답하지 않으면 동의한 것으로 보지 않고, 새 가격으로 결제하지 않아요.\n\n` +
                 `${koDate(last)}까지 골라 주세요. 궁금한 점은 앱의 '고객센터'나 도움말 페이지(/help)로 문의해 주세요.` },
-    en: { subject: `[SystemBoost] ${PLAN_EN(n.plan)} subscription price change (from ${enDate(n.effective)})`,
-          body: `Hello from SystemBoost.\n\nThe price of the ${PLAN_EN(n.plan)} subscription changes.\n- Current price: ₩${won(n.oldPrice)}\n` +
-                `- New price: ₩${won(n.newPrice)} (automatic payments on or after ${enDate(n.effective)})\n\n` +
-                `We need your agreement before charging the new price. You can agree or cancel in the SystemBoost app. If you agree, you keep using it at ` +
-                `the new price; if you cancel, you keep using what you already paid for until it ends. No answer is not taken as agreement, and nothing ` +
-                `is charged at the new price without it.\n\nPlease choose by ${enDate(last)}. For questions, use 'Support' in the app or the help page (/help).` },
   };
 }
 // The card subscription a held key belongs to -> { h, sub } or null (the same check as a plan change).
@@ -687,7 +675,7 @@ async function subPrice(req, env) {
   const choice = was === "agree" || was === "cancel" ? was : "";
   if (!choice && (await env.LICENSES.get("sub:" + s.sub)) === null) return json(none);   // ended: nothing to agree to
   return json({ notice: { id: n.id, plan: n.plan, oldPrice: n.oldPrice, newPrice: n.newPrice, effective: n.effective,
-                          text: priceText(n, b.lang === "en" ? "en" : "ko") }, choice });
+                          text: priceText(n) }, choice });
 }
 async function subPriceChoose(req, env) {
   if (await overIp(req, env, "price", IP_LIMIT.price)) return json({ error: "busy" }, 429);
@@ -721,7 +709,7 @@ async function priceList(env) {
     const choices = l.keys.map(k => ({ sub: k.name.slice(pre.length), ...(k.metadata || {}) })).sort((a, b) => String(b.at).localeCompare(String(a.at)));
     notices.push({ ...n, open: today < n.effective, agree: choices.filter(c => c.choice === "agree").length,
                    cancel: choices.filter(c => c.choice === "cancel").length, choices,
-                   text: { ko: priceText(n, "ko"), en: priceText(n, "en") }, email: priceEmail(n) });
+                   text: { ko: priceText(n) }, email: priceEmail(n) });
   }
   return { notices, today, minEffective: kstDay(Date.now() + PRICE_NOTICE_DAYS * 864e5), noticeDays: PRICE_NOTICE_DAYS };
 }
@@ -747,7 +735,7 @@ async function priceCreate(env, b) {
   const n = { id, plan, oldPrice, newPrice, variant, effective, created: now() };
   await env.LICENSES.put("config:price_notices", JSON.stringify([n, ...list]));
   await audit(env, "admin", "가격 변경 안내", PLANS[plan] + " · " + oldPrice + "원 → " + newPrice + "원 · " + effective + " 시행 · " + id);
-  return { notice: n, text: { ko: priceText(n, "ko"), en: priceText(n, "en") }, email: priceEmail(n) };
+  return { notice: n, text: { ko: priceText(n) }, email: priceEmail(n) };
 }
 async function priceDelete(env, b) {
   const list = await priceNotices(env), n = list.find(x => x.id === String(b.id ?? ""));
@@ -1135,7 +1123,7 @@ async function admin(req, url, env, ctx) {
   if (route === "GET /preorders" || route.startsWith("POST /preorders/")) {
     let res;   // the rows are only in the Stats object: when it cannot be reached, say so (not the generic 500)
     try { res = await preorderAdmin(env, route, body, { stats, audit: (action, detail) => audit(env, "admin", action, detail) }); }
-    catch { return json({ error: "통계 저장소에 연결하지 못했어요. 잠시 뒤 다시 시도하세요", error_en: "Could not reach the stats store. Try again in a moment." }, 503, false); }
+    catch { return json({ error: "통계 저장소에 연결하지 못했어요. 잠시 뒤 다시 시도하세요" }, 503, false); }
     const { status = 200, ...r } = res;
     return json(r, status, false);
   }

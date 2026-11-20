@@ -84,11 +84,10 @@ assert.equal((await call("/terms?lang=en")).status, 200);
 // ---- /help: the seller rows are put in by its script only for filled fields; the Korea-only notice is on the page
 assert.ok(/if \(!v\) return;\s*\r?\n\s*dl\.appendChild\(el\("dt"/.test(HELP_HTML), "/help skips an empty seller field");
 assert.ok(HELP_HTML.includes('<p class="m" data-t="koreaOnly"></p>'));
-assert.ok(HELP_HTML.includes('koreaOnly: "SystemBoost는 대한민국에서만 판매해요."') && HELP_HTML.includes('koreaOnly: "SystemBoost is sold only in the Republic of Korea."'));
+assert.ok(HELP_HTML.includes('koreaOnly: "SystemBoost는 대한민국에서만 판매해요."') && !HELP_HTML.includes("Republic of Korea"));
 // the Radeon driver features are left out of the next builds; Article 12-2 is said to apply only where they are included
 assert.ok(HELP_HTML.includes("라데온 드라이버 기능은 라이선스 확인이 끝날 때까지 빠졌어요. 프레임 생성은 라데온에서도 그대로 쓸 수 있어요."));
-assert.ok(HELP_HTML.includes("Radeon driver features are left out until the license check is finished. Frame generation still works on Radeon."));
-assert.ok(HELP_HTML.includes("라데온 드라이버 기능이 들어 있는 빌드에만 적용돼요") && HELP_HTML.includes("apply only to builds that include the Radeon driver features"));
+assert.ok(HELP_HTML.includes("라데온 드라이버 기능이 들어 있는 빌드에만 적용돼요"));
 const helpPage = await (await call("/help")).text();
 assert.ok(helpPage.includes('data-t="koreaOnly"'));
 

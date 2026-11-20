@@ -19,9 +19,7 @@ const noMac = (what, s) => { const m = MAC.exec(clean(s)); assert.equal(m, null,
 // 1. what buyers read
 noMac("/help", HELP_HTML);
 noMac("/privacy ko", PRIVACY_HTML.ko);
-noMac("/privacy en", PRIVACY_HTML.en);
 noMac("privacy ko source", src("./privacy/privacy.ko.md"));
-noMac("privacy en source", src("./privacy/privacy.en.md"));
 noMac("FAQ", JSON.stringify(DEFAULT_FAQ));
 noMac("support categories and reasons", JSON.stringify([CATEGORIES, REFUND_REASONS, DEPOSIT_GUIDE]));
 noMac("purchase note", src("./src/purchase_note.js"));
@@ -39,24 +37,23 @@ assert.ok(tpl, "the announcement templates");
 noMac("announcement templates", tpl[1]);
 assert.ok(tpl[1].includes("🪟 Windows (설치판)") && tpl[1].includes("🪟 Windows (포터블)"));
 
-// 3. /help: Windows only, the release date, the trademark line, in both languages
+// 3. /help: Windows only, the release date, the trademark line (Korean only)
 for (const s of ["지원 환경: 현재 윈도우만 지원해요",
-                 "Supported system: Windows only for now",
                  "Windows(윈도우)는 Microsoft 그룹 회사의 상표예요.",
-                 "Windows is a trademark of the Microsoft group of companies.",
                  '<p class="m" data-t="about"></p>', '<footer class="m" data-t="trademark"></footer>'])
   assert.ok(HELP_HTML.includes(s), s);
 // the footer comes after the last section, before the script
 assert.ok(HELP_HTML.indexOf('data-t="trademark"') > HELP_HTML.lastIndexOf("</section>") && HELP_HTML.indexOf('data-t="trademark"') < HELP_HTML.indexOf("<script"));
-// every brand the page or the default FAQ names is in the trademark line of each language, and nothing else
+// every brand the page or the default FAQ names is in the trademark line, and nothing else
 const BRANDS = ["Windows", "Microsoft", "Cloudflare", "Supabase", "Resend", "Lemon Squeezy", "Discord", "GitHub", "NVIDIA", "DLSS", "AMD", "Radeon", "Intel", "Google", "Stripe"];
-const tm = lang => new RegExp(lang + ': \\{[\\s\\S]*?trademark: "([^"]+)"').exec(HELP_HTML)[1];
+const tms = [...HELP_HTML.matchAll(/trademark: "([^"]+)"/g)].map(m => m[1]);
+assert.equal(tms.length, 1, "one trademark line: Korean only");
 const shown = HELP_HTML.replace(/trademark: "[^"]+"/g, "").replace(/\/\/[^\n]*/g, "") + JSON.stringify(DEFAULT_FAQ);
-for (const lang of ["ko", "en"]) {
-  const line = tm(lang);
+{
+  const line = tms[0];
   for (const b of BRANDS) {
-    const onPage = new RegExp("\\b" + b + "\\b").test(shown) || (b === "Windows" && shown.includes("윈도우")) || (b === "Microsoft" && /\bWindows\b|윈도우/.test(shown));
-    assert.equal(line.includes(b), onPage, lang + " trademark line and " + b);
+    const onPage = new RegExp("\\b" + b + "\\b").test(shown) || (b === "Windows" && shown.includes("윈도우")) || (b === "Radeon" && shown.includes("라데온")) || (b === "Microsoft" && /\bWindows\b|윈도우/.test(shown));
+    assert.equal(line.includes(b), onPage, "trademark line and " + b);
   }
 }
 

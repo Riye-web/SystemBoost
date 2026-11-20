@@ -404,43 +404,51 @@ const noPre = r => {
   ok(r.text.includes(PRIVACY_PRE_CSS) && PRE_BOX.test(r.text) && PRE_SECTION.test(r.text), "the pre-registration notice is there");
   return { text: r.text.replace(PRIVACY_PRE_CSS, "").replace(PRE_BOX, "").replace(PRE_SECTION, "") };
 };
-const before = at("2026-11-20T09:00:00+09:00", (path, env = P.env) => call(P, path, {}, env));
+const before = at("2026-11-20T09:00:00+09:00", (path, env = P.env, headers = {}) => call(P, path, { headers }, env));
 const after = at("2027-01-02T09:00:00+09:00", (path, env = P.env) => call(P, path, {}, env));
-for (const lang of ["ko", "en"]) {
-  const q = lang === "en" ? "?lang=en" : "";
-  const live = await call(L, "/privacy" + q), now = await before("/privacy" + q);
+// Korean only since 0.8.21: the live server's page without its one English part, the header link to the English
+// summary (the summary itself is gone). ?lang=en and an English browser get the Korean page.
+const EN_LINK = '<a href="/privacy?lang=en" hreflang="en">English summary</a>';
+const liveKo = r => { ok(r.text.includes(EN_LINK), "the live page had the link"); return r.text.replace(EN_LINK, ""); };
+for (const [q, headers] of [["", {}], ["?lang=en", {}], ["", { "Accept-Language": "en-US,en;q=0.9" }]]) {
+  const label = (q || "no query") + (headers["Accept-Language"] ? " + Accept-Language: en" : "");
+  const live = await call(L, "/privacy"), now = await before("/privacy" + q, P.env, headers);
   eq(now.status, 200);
   eq(Object.fromEntries(Object.entries(now.headers).filter(([k]) => k !== "content-security-policy")),
-     Object.fromEntries(Object.entries(live.headers).filter(([k]) => k !== "content-security-policy")), lang + ": the same headers");
-  eq(cspShape(now), cspShape(live), lang + ": the same CSP, a nonce of its own");
+     Object.fromEntries(Object.entries(live.headers).filter(([k]) => k !== "content-security-policy")), label + ": the same headers");
+  eq(cspShape(now), cspShape(live), label + ": the same CSP, a nonce of its own");
   const box = notice.exec(now.text);
-  ok(box, lang + ": a notice at the top");
-  eq(box[1], lang === "en" ? 'The privacy policy changes on January 1, 2027. <a href="/privacy?next=1&amp;lang=en">Preview the new policy</a>'
-                           : '개인정보 처리방침이 2027년 1월 1일에 바뀌어요. <a href="/privacy?next=1">바뀌는 처리방침 미리 보기</a>');
-  ok(now.text.indexOf(box[0]) === now.text.indexOf("<main>\n") + 7, lang + ": right at the top of the page");
-  eq(nonceFree(noPre({ text: now.text.replace(box[0], "").replace(NOTICE_CSS, "") })), nonceFree(live), lang + ": otherwise the policy in force, as the live server shows it");
-  ok(live.text.includes(lang === "en" ? "Effective date: November 13, 2026" : "시행일: 2026년 11월 13일"), lang + ": its blanks filled as always");
+  ok(box, label + ": a notice at the top");
+  eq(box[1], '개인정보 처리방침이 2027년 1월 1일에 바뀌어요. <a href="/privacy?next=1">바뀌는 처리방침 미리 보기</a>');
+  ok(now.text.indexOf(box[0]) === now.text.indexOf("<main>\n") + 7, label + ": right at the top of the page");
+  eq(nonceFree(noPre({ text: now.text.replace(box[0], "").replace(NOTICE_CSS, "") })), nonceFree({ text: liveKo(live) }),
+     label + ": otherwise the policy in force, as the live server shows it, without the English link");
+  ok(now.text.startsWith('<!DOCTYPE html>\n<html lang="ko">') && !/lang=en|hreflang="en"|English/.test(now.text), label + ": Korean only");
+  ok(live.text.includes("시행일: 2026년 11월 13일"), label + ": its blanks filled as always");
   eq([...now.text.matchAll(/<style nonce="([^"]+)">/g)].map(m => m[1]).join(), /'nonce-([^']+)'/.exec(now.headers["content-security-policy"])[1]);
-  ok(!/<script|<link|<img|<iframe|\bsrc=|\son\w+=/i.test(now.text), lang + ": no script, nothing loaded");
+  ok(!/<script|<link|<img|<iframe|\bsrc=|\son\w+=/i.test(now.text), label + ": no script, nothing loaded");
 
-  const next = await before("/privacy?next=1" + (lang === "en" ? "&lang=en" : ""));
+  const next = await before("/privacy?next=1" + (q ? "&lang=en" : ""), P.env, headers);
   eq(next.status, 200);
   eq(cspShape(next), cspShape(live));
   const top = notice.exec(next.text);
-  eq(top[1], lang === "en" ? 'This policy takes effect on January 1, 2027. Until then the current privacy policy applies. <a href="/privacy?lang=en">Read the current policy</a>'
-                           : '이 처리방침은 2027년 1월 1일부터 시행해요. 그때까지는 지금의 개인정보 처리방침이 적용돼요. <a href="/privacy">지금의 처리방침 보기</a>');
-  eq(next.text.split(lang === "en" ? "Effective date: January 1, 2027" : "시행일: 2027년 1월 1일").length - 1, lang === "en" ? 1 : 2,
-     lang + ": the new policy, dated from the start, not from the dashboard's 시행일");
-  ok(!next.text.includes("2026년 11월 13일") && !next.text.includes("November 13, 2026"));
-  ok(next.text.includes(lang === "en" ? '<a href="/privacy?next=1" hreflang="ko">' : '<a href="/privacy?next=1&amp;lang=en" hreflang="en">'), lang + ": the other language stays on the new policy");
+  eq(top[1], '이 처리방침은 2027년 1월 1일부터 시행해요. 그때까지는 지금의 개인정보 처리방침이 적용돼요. <a href="/privacy">지금의 처리방침 보기</a>');
+  eq(next.text.split("시행일: 2027년 1월 1일").length - 1, 2, label + ": the new policy, dated from the start, not from the dashboard's 시행일");
+  ok(!next.text.includes("2026년 11월 13일"));
+  ok(!/lang=en|hreflang="en"|English/.test(next.text), label + ": the new policy is Korean only");
   const filled = html => html.replace(/\{\{OWNER_NAME\}\}/g, config.rep).replace(/\{\{OWNER_EMAIL\}\}/g, config.email)
     .replace(/\{\{SUPABASE_REGION\}\}/g, config.dbRegion.replace(/</g, "&lt;"));
-  eq(nonceFree({ text: next.text.replace(top[0], "").replace(NOTICE_CSS, "") }).replace(lang === "en" ? "/privacy?next=1\" hreflang" : "/privacy?next=1&amp;lang=en\" hreflang", lang === "en" ? "/privacy\" hreflang" : "/privacy?lang=en\" hreflang"),
-     filled(PRIVACY_HTML[lang]).replace(/\{\{EFFECTIVE_DATE\}\}/g, lang === "en" ? "January 1, 2027" : "2027년 1월 1일").replace(/__NONCE__/g, "N"), lang + ": otherwise privacy_page.js");
-  eq(filled(PRIVACY_PREV_HTML[lang]).replace(/\{\{EFFECTIVE_DATE\}\}/g, lang === "en" ? "November 13, 2026" : "2026년 11월 13일").replace(/__NONCE__/g, "N"), nonceFree(live),
-     lang + ": privacy_prev_page.js is the live server's page");
+  eq(nonceFree({ text: next.text.replace(top[0], "").replace(NOTICE_CSS, "") }),
+     filled(PRIVACY_HTML.ko).replace(/\{\{EFFECTIVE_DATE\}\}/g, "2027년 1월 1일").replace(/__NONCE__/g, "N"), label + ": otherwise privacy_page.js");
+  eq(filled(PRIVACY_PREV_HTML.ko).replace(/\{\{EFFECTIVE_DATE\}\}/g, "2026년 11월 13일").replace(/__NONCE__/g, "N"), nonceFree({ text: liveKo(live) }),
+     label + ": privacy_prev_page.js is the live server's page without the English link");
 }
-eq(PRIVACY_PREV_HTML, (await import(pathToFileURL(join(dir, "privacy_page.js")).href)).PRIVACY_HTML, "privacy_prev_page.js holds commit 776dd71's page as it was");
+{
+  const was = (await import(pathToFileURL(join(dir, "privacy_page.js")).href)).PRIVACY_HTML;
+  eq(Object.keys(was).sort(), ["en", "ko"]);
+  eq(PRIVACY_PREV_HTML, { ko: was.ko.replace(EN_LINK, "") }, "privacy_prev_page.js holds commit 776dd71's Korean page, only the English link taken out");
+  eq(was.ko.split(EN_LINK).length, 2, "the link was there once");
+}
 
 // ---------------------------------------------------------------- 6. a missing or broken ACCOUNTS_V2_FROM: as before the start
 for (const v of [undefined, "", "2027-01-01", "2027-01-01T00:00:00+09:00 ", "2027-02-30T00:00:00+09:00"]) {
@@ -455,7 +463,7 @@ for (const v of [undefined, "", "2027-01-01", "2027-01-01T00:00:00+09:00 ", "202
   eq((await call(N, "/account/login", { body: { id: "bobby", password: "bobbyspass", device: APP_DEVICE } }, env)).status, 200, label + "아이디 login as before");
   eq(sent.now.slice(from).filter(x => V2_FIELDS.some(k => k in x.b)).length, 0, label + "nothing of accounts v2 to the database");
   const pv = await after("/privacy", env), live = await call(L, "/privacy");
-  eq(nonceFree(noPre(pv)), nonceFree(live), label + "/privacy is the policy in force, with no date to announce");
+  eq(nonceFree(noPre(pv)), nonceFree({ text: liveKo(live) }), label + "/privacy is the policy in force, with no date to announce");
   const nx = await after("/privacy?next=1", env);
   ok(nx.text.includes("이 처리방침은 아직 시행하지 않아요. 지금은 지금의 개인정보 처리방침이 적용돼요.") && nx.text.includes("시행일: <span class=\"blank\">" + PRIVACY_EMPTY.ko + "</span>"),
      label + "?next=1: the new policy, no date");
@@ -499,7 +507,7 @@ const pa = await after("/privacy");
 ok(!notice.test(pa.text) && !pa.text.includes(NOTICE_CSS), "no notice");
 eq(pa.text.split("시행일: 2027년 1월 1일").length - 1, 2, "the dashboard's 2026-11-13 is before the start: the start's day");
 eq(nonceFree(pa), nonceFree(await after("/privacy?next=1")), "?next=1 is the same page from the start");
-ok((await after("/privacy?lang=en")).text.includes("Effective date: January 1, 2027"));
+ok((await after("/privacy?lang=en")).text.includes("시행일: 2027년 1월 1일"), "?lang=en: the same Korean policy");
 {
   const saved = (await adm(N, "/support/config")).config;
   await adm(N, "/support/config", { ...saved, privacy: { ...saved.privacy, effectiveDate: "2027-01-15" } });
@@ -512,6 +520,6 @@ ok((await after("/privacy?lang=en")).text.includes("Effective date: January 1, 2
 
 // /help and /terms are as they were; the FAQ dates what starts with accounts v2
 ok(DEFAULT_FAQ.ko.some(f => f.a.startsWith("2027년 1월 1일부터 메일 주소를 확인한 회원은") && f.a.includes("2027년 1월 1일부터 앱에서 계정 복구를 요청하세요")));
-ok(DEFAULT_FAQ.en.some(f => f.a.startsWith("From January 1, 2027, members with a confirmed email") && f.a.includes("account recovery in the app from January 1, 2027")));
+eq(DEFAULT_FAQ.en, undefined, "the FAQ is Korean only");
 
 console.log("accounts gate tests passed (" + checks + " checks)");

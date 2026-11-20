@@ -1,6 +1,6 @@
 // Customer support and refund requests (KV binding LICENSES, like the rest of the worker).
 //
-//   GET  /support/info                    seller info, notice, FAQ, categories, refund reasons (?lang=en)
+//   GET  /support/info                    seller info, notice, FAQ, categories, refund reasons (Korean only)
 //   POST /support/ticket                  new ticket -> {id, token} (the token is shown once, only its hash is kept).
 //                                         "key": the full licence key, checked by its signature like /support/subscription
 //                                         and never stored: the ticket keeps keyId + keyVerified true. "keyId" alone is
@@ -18,8 +18,8 @@
 //   429 "busy" says why in "scope": "ip" (this address, this hour; or a counter write to retry) or "day" (the day's
 //   budget, until 00:00 UTC), with Retry-After in seconds.
 //   GET  /help                            the same for people without the app (help_page.js)
-//   GET  /privacy                         the privacy policy (Korean; ?lang=en an English summary): privacy_page.js, made by
-//                                         build_privacy.mjs from privacy/*.md; its four blanks come from config:support.
+//   GET  /privacy                         the privacy policy (Korean only): privacy_page.js, made by
+//                                         build_privacy.mjs from privacy/privacy.ko.md; its four blanks come from config:support.
 //                                         Before accounts v2 start (ACCOUNTS_V2_FROM): the policy of then (privacy_prev_page.js)
 //                                         with a notice of the change, and ?next=1 the new one dated from that start
 //   /admin/api/support*                   dashboard: list, read, reply, status, refund decisions, delete, config,
@@ -112,19 +112,19 @@ export async function sellerPublic(req, env) {
 }
 
 export const CATEGORIES = [
-  { id: "pay", ko: "결제", en: "Payment" },
-  { id: "deposit", ko: "입금 확인", en: "Payment sent" },   // 0.8.14: "I transferred the money" for an order code (required)
-  { id: "refund", ko: "환불", en: "Refund" },
-  { id: "bug", ko: "오류 신고", en: "Bug report" },
-  { id: "howto", ko: "사용 방법", en: "How to use" },
-  { id: "idea", ko: "제안", en: "Suggestion" },
-  { id: "other", ko: "기타", en: "Other" },
+  { id: "pay", ko: "결제" },
+  { id: "deposit", ko: "입금 확인" },   // 0.8.14: "I transferred the money" for an order code (required)
+  { id: "refund", ko: "환불" },
+  { id: "bug", ko: "오류 신고" },
+  { id: "howto", ko: "사용 방법" },
+  { id: "idea", ko: "제안" },
+  { id: "other", ko: "기타" },
 ];
 export const REFUND_REASONS = [
-  { id: "change_mind", ko: "단순 변심", en: "Changed my mind" },
-  { id: "not_working", ko: "작동하지 않음 · 표시나 광고와 다름", en: "Does not work or differs from what was shown" },
-  { id: "double", ko: "중복 결제", en: "Paid twice" },
-  { id: "other", ko: "기타", en: "Other" },
+  { id: "change_mind", ko: "단순 변심" },
+  { id: "not_working", ko: "작동하지 않음 · 표시나 광고와 다름" },
+  { id: "double", ko: "중복 결제" },
+  { id: "other", ko: "기타" },
 ];
 
 // Bank transfer, in one sentence: the same words in the FAQ below, on /help (help_page.js TX depositGuide), in the
@@ -133,14 +133,12 @@ export const REFUND_REASONS = [
 // Discord gets its second alert (index.js depositReminders).
 export const DEPOSIT_GUIDE = {
   ko: "주문 코드(SB-XXXX-XXXX)를 받고 → 판매자 계좌로 입금하고 → 앱에서 '고객센터에 입금 알리기'를 누르면 → 판매자가 확인한 뒤 24시간 안에 키를 보내요. 24시간은 입금을 알린 때부터예요.",
-  en: "Get an order code (SB-XXXX-XXXX) → transfer the money to the seller's account → press 'Tell Support you have paid' in the app → the seller checks it and sends the key within 24 hours. The 24 hours count from when you tell us you have paid.",
 };
 export const DEPOSIT_HOURS = 24, DEPOSIT_WARN_HOURS = 20;
 
 // Article 9 of the licence agreement, word for word (app/SystemBoost.App/Assets/eula.txt; an item that runs over two
 // lines there is one string here, joined with a space). When the agreement changes, change this too: test_support.mjs
-// compares the Korean text with eula.txt. The agreement is Korean only; "en" is the English /help page's own wording,
-// no longer checked against a translation file.
+// compares the Korean text with eula.txt. The agreement is Korean only.
 export const ARTICLE_9 = {
   ko: { title: "제9조 (구매와 청약철회)", items: [
     "1. 사용자는 키를 받은 날부터 7일 이내에 청약을 철회할 수 있습니다.",
@@ -148,13 +146,6 @@ export const ARTICLE_9 = {
     "3. 프로그램이 표시나 광고의 내용과 다르거나 계약과 다르게 제공된 경우, 사용자는 받은 날부터 3개월 이내, 그 사실을 안 날 또는 알 수 있었던 날부터 30일 이내에 청약을 철회할 수 있습니다.",
     "4. 환불이 끝나면 판매자는 해당 키를 막습니다.",
     "5. 청약철회와 환불 문의는 앱이나 도움말 페이지의 고객센터, 또는 판매 페이지에 표시한 연락처로 보냅니다.",
-  ] },
-  en: { title: "Article 9 (Purchase and withdrawal)", items: [
-    "1. The User may withdraw from the purchase within 7 days of receiving the key.",
-    "2. Once the User registers a key and starts using paid features, the digital content is treated as provided and withdrawal may be limited. The Seller offers a free plan that can be used before purchase. Features found only in paid plans cannot be tried before purchase.",
-    "3. If the Program differs from what was displayed or advertised, or is provided differently from the contract, the User may withdraw within 3 months of receiving it, or within 30 days of the day the User learned or could have learned of this.",
-    "4. When a refund is complete, the Seller blocks the key.",
-    "5. Questions about withdrawal and refunds go to the support center in the app or on the help page, or to the contact shown on the sales page.",
   ] },
 };
 
@@ -185,48 +176,18 @@ export const DEFAULT_FAQ = {
     { q: "문의 내용은 얼마나 보관하나요?",
       a: "문의 종류, 제목, 내용과 답변, 적은 연락처, 주문 코드와 키 식별 번호, '앱 정보 함께 보내기'를 고른 경우 그 앱 정보를 답변과 기록을 위해 보관해요. 회원으로 로그인한 앱에서 보내면 아이디도 함께 남아요. 환불 요청이면 서버가 가진 주문·키 정보(플랜, 받은 날, 입금자명 등)도 붙어요. 키 전체를 보내도 키는 주인 확인에만 쓰고 저장하지 않아요. 결제·환불 문의는 마지막으로 바뀐 날부터 3년, 그 밖의 문의는 1년이 지나면 지워져요. IP 주소는 문의에 남기지 않아요. 너무 많은 요청을 막으려고 IP 주소로 만든 해시값을 판매자 서버에 1시간까지 둬요." },
   ],
-  en: [
-    { q: "Where do I enter my license key?",
-      a: "Paste the key into the 'License key' box on the '★ Plans' page on the left of the app and press 'Register'. After you pay, the app waits for the key (up to 90 days, even if you restart it) and shows it in a popup when it is issued." },
-    { q: "How do bank transfer and direct payment work?",
-      a: "On '★ Plans', choose 'Bank transfer · direct payment', then press 'Pay': an order code (SB-XXXX-XXXX) and the seller's payment page open. " + DEPOSIT_GUIDE.en + " Put the order code in the transfer memo. On the web (/help) you can also tell us with the category 'Payment sent' and the order code. A key bought by direct payment is not charged automatically (license agreement, Article 3, Paragraph 3). If you pay again in the app before the period ends, the new key's period starts when the same- or lower-plan key registered on this PC ends (with the app updated to the latest version). A card subscription starts on the day you pay." },
-    { q: "How do card payments and cancelling a subscription work?",
-      a: "Card details are entered only in the Lemon Squeezy checkout; they never reach or stay in the SystemBoost app or server. A key bought as a card subscription is charged automatically every period until you cancel, and is extended by one period with each payment. You can cancel at any time through the subscription management link in the payment email; after cancelling, the app returns to the Free plan when the period already paid ends (Article 3, Paragraph 3, in force from December 8, 2026)." },
-    { q: "How do I ask for a refund (withdrawal)?",
-      a: "Article 9 of the license agreement applies. In the app, use the 'Refund request' tab in Support; on the web (/help), send a request with the category 'Refund'. Give your order code or key; the seller checks it and replies. Card payments are refunded through Lemon Squeezy; bank transfers and direct payments are paid back by the seller. When a refund is complete, the seller blocks the key (Article 9, Paragraph 4)." },
-    { q: "My key went back to the Free plan.",
-      a: "With a monthly or yearly key, the app returns to the Free plan when the stated period ends (Article 3, Paragraph 3). If the seller blocked the key (a refund, a shared key and so on), it returns to the Free plan when the app starts online (Article 3, Paragraph 6; Article 9, Paragraph 4). If you do not know why, send a request with the category 'Payment'." },
-    { q: "How do I undo the settings game boost changed?",
-      a: "The program backs up the previous values and provides a way to restore them (Article 6, Paragraph 1). Open '↺ Backup · Restore' on the left and press 'Restore everything'. If you used game boost, also run it before deleting the program (Article 11, Paragraph 1)." },
-    { q: "Does frame generation make the game faster?",
-      a: "Frame generation does not increase the frames the game actually draws. It inserts images between frames. Turning it on increases input delay, and it is not recommended for competitive games (Article 7, Paragraphs 1 and 2). Actual results differ by PC, game and settings (Article 7, Paragraph 4)." },
-    { q: "What about games with anti-cheat?",
-      a: "The program captures the game's picture and shows it in a separate overlay. It does not inject code into game processes and does not change game memory or game files (Article 5, Paragraph 1). The seller has not tested the program in games that use anti-cheat and does not guarantee that it complies with the terms of use or anti-cheat policy of every game. Please check a game's policy before using it (Article 5, Paragraphs 2 and 3)." },
-    { q: "What do usage statistics send, and how do I turn them off?",
-      a: "While it is on, the app sends a randomly created install number, the app version, operating system, plan, frame generation multiplier, and whether one-click game boost is in use. Keys, email addresses, game names and hardware information are not sent (Article 8, Paragraph 2). Turn off 'Send usage statistics' in the app's 'Settings'." },
-    { q: "I forgot my member password.",
-      a: "From January 1, 2027, members with a confirmed email address can open '◈ Account' in the app, press 'Forgot password' and enter the email address to get a reset link by mail (it works for 30 minutes). Members who signed up with an ID can change the password with the recovery code from sign-up. Without either, ask for account recovery in the app from January 1, 2027 (until then, send a request with the category 'Other'); after 72 hours the seller checks it against payment records." },
-    { q: "How long are support requests kept?",
-      a: "The category, subject, message and replies, the contact you wrote, the order code and key ID, and, if you chose to send it, the app information are kept to answer you and keep a record. Sent from an app signed in as a member, the member ID is kept too. For a refund request the server also attaches the order and key details it holds (plan, date issued, payer name and more). If you send the full key, it is used only to check that it is yours and is not stored. Payment and refund requests are deleted 3 years after they last changed, other requests after 1 year. Your IP address is not kept with the request. To stop too many requests, a hash made from your IP address stays on the seller's server for up to 1 hour." },
-  ],
 };
 
 // Admin messages posted into the thread when the seller gives none.
 const SAY = {
-  approved: { ko: "환불 요청을 승인했어요. 환불을 마치면 여기로 알려 드릴게요.",
-              en: "Your refund request is approved. We'll tell you here when it's done." },
-  rejected: { ko: r => "환불 요청을 받아들이지 못했어요. 사유: " + r + "\n궁금한 점은 이 문의에 답장해 주세요.",
-              en: r => "We could not accept the refund request. Reason: " + r + "\nReply here with any questions." },
-  done:     { ko: "환불을 마쳤어요.", en: "The refund is complete." },
-  doneKeys: { ko: "환불을 마쳤어요. 환불한 키는 막았어요(사용권 계약 제9조 제4항).",
-              en: "The refund is complete. The refunded key is blocked (license agreement, Article 9, Paragraph 4)." },
-  card:     { ko: "Lemon Squeezy에서 카드 환불이 처리됐어요. 환불한 키는 막았어요(사용권 계약 제9조 제4항).",
-              en: "Lemon Squeezy has processed the card refund. The refunded key is blocked (license agreement, Article 9, Paragraph 4)." },
+  approved: { ko: "환불 요청을 승인했어요. 환불을 마치면 여기로 알려 드릴게요." },
+  rejected: { ko: r => "환불 요청을 받아들이지 못했어요. 사유: " + r + "\n궁금한 점은 이 문의에 답장해 주세요." },
+  done:     { ko: "환불을 마쳤어요." },
+  doneKeys: { ko: "환불을 마쳤어요. 환불한 키는 막았어요(사용권 계약 제9조 제4항)." },
+  card:     { ko: "Lemon Squeezy에서 카드 환불이 처리됐어요. 환불한 키는 막았어요(사용권 계약 제9조 제4항)." },
   // a 입금 확인 (deposit) ticket, approved or rejected from the dashboard (POST /admin/api/support/deposit)
-  depositOk: { ko: code => "입금을 확인했어요. 키를 보냈어요. 앱의 '★ 플랜' 화면에서 바로 확인할 수 있어요. 키가 보이지 않으면 '★ 플랜'의 '주문 코드로 키 받기' 칸에 주문 코드 " + code + "를 넣어 주세요.",
-               en: code => "We have confirmed your payment and sent the key. You can see it right away on the '★ Plans' page in the app. If the key does not show, enter the order code " + code + " in the 'Get a key with an order code' box on '★ Plans'." },
-  depositNo: { ko: r => "입금을 확인하지 못해 이 주문을 거절했어요. 사유: " + r + "\n궁금한 점은 이 문의에 답장해 주세요.",
-               en: r => "We could not confirm the payment, so this order was declined. Reason: " + r + "\nReply here with any questions." },
+  depositOk: { ko: code => "입금을 확인했어요. 키를 보냈어요. 앱의 '★ 플랜' 화면에서 바로 확인할 수 있어요. 키가 보이지 않으면 '★ 플랜'의 '주문 코드로 키 받기' 칸에 주문 코드 " + code + "를 넣어 주세요." },
+  depositNo: { ko: r => "입금을 확인하지 못해 이 주문을 거절했어요. 사유: " + r + "\n궁금한 점은 이 문의에 답장해 주세요." },
 };
 
 // ---------------------------------------------------------------- helpers
@@ -237,7 +198,6 @@ const now = () => new Date().toISOString().replace(/\.\d+Z$/, "Z");
 const chars = s => [...s].length;
 const cut = (s, n) => [...s].slice(0, n).join("");
 const keepFor = cat => (cat === "pay" || cat === "deposit" || cat === "refund" ? LIMITS.keepLong : LIMITS.keepShort);
-const lang2 = v => (v === "en" ? "en" : "ko");
 function json(o, status = 200) {   // public endpoints: CORS like the rest
   return new Response(JSON.stringify(o), { status, headers: { "content-type": "application/json", "cache-control": "no-store", "access-control-allow-origin": "*" } });
 }
@@ -604,6 +564,7 @@ async function create(req, url, env, h, ctx) {
   // it costs CPU. It is never stored, logged or sent back; the ticket keeps its keyId and keyVerified.
   const key = b.key == null || b.key === "" ? "" : typeof b.key === "string" && b.key.length <= LIMITS.key ? b.key.trim() : "?";
   if (key && !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(key)) return bad("bad key");
+  // "en" is still taken from apps before 0.8.21 (they sent their screen language); the ticket is Korean either way
   if (b.lang != null && b.lang !== "ko" && b.lang !== "en") return bad("lang");
   if (b.consent !== true) return bad("consent");
   let reason = "";
@@ -638,7 +599,7 @@ async function create(req, url, env, h, ctx) {
 
   const t = now(), token = hex(crypto.getRandomValues(new Uint8Array(32)));
   const ticket = { id: await newId(env), tokenHash: await sha(token), cat, subject, status: "open", created: t, updated: t, consentAt: t,
-                   messages: [{ from: "user", at: t, text }], lang: lang2(b.lang), unreadUser: false };
+                   messages: [{ from: "user", at: t, text }], lang: "ko", unreadUser: false };
   if (contact) ticket.contact = contact;
   if (order) ticket.order = order;
   if (o) ticket.orderMatched = true;
@@ -790,10 +751,10 @@ async function subscription(req, url, env, h) {
 
 // refunds: true always: refund (withdrawal) requests are taken even while the seller has closed support ("open").
 async function info(url, env) {
-  const c = await supportConfig(env), lang = lang2(url.searchParams.get("lang"));
+  const c = await supportConfig(env);   // Korean only: ?lang= is ignored
   return json({ open: c.open, refunds: true, seller: c.seller, notice: c.notice, refundDays: c.refundDays,
-                faq: c.faq.length ? c.faq : DEFAULT_FAQ[lang], faqDefault: !c.faq.length,
-                categories: CATEGORIES, refundReasons: REFUND_REASONS, policy: ARTICLE_9[lang] });
+                faq: c.faq.length ? c.faq : DEFAULT_FAQ.ko, faqDefault: !c.faq.length,
+                categories: CATEGORIES, refundReasons: REFUND_REASONS, policy: ARTICLE_9.ko });
 }
 
 // A browser on another site can send text/plain or a form without asking; application/json needs a CORS preflight,
@@ -820,11 +781,11 @@ export async function support(req, url, env, h, ctx) {
   return notFound();
 }
 
-// GET /help. Static page: every value it shows comes from the API and is put in with textContent.
+// GET /help. Static page: every value it shows comes from the API and is put in with textContent. Korean only:
+// ?lang=en shows the same Korean page.
 export function helpPage(url) {
-  const lang = lang2(url.searchParams.get("lang"));
   const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
-  const html = HELP_HTML.replaceAll("__NONCE__", nonce).replace('<html lang="ko">', '<html lang="' + lang + '">');
+  const html = HELP_HTML.replaceAll("__NONCE__", nonce);
   return new Response(html, { headers: {
     "content-type": "text/html; charset=utf-8", "cache-control": "no-store",
     "content-security-policy": `default-src 'none'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
@@ -834,14 +795,13 @@ export function helpPage(url) {
 // GET /privacy. The policy is static HTML made from privacy/*.md by build_privacy.mjs (no Markdown at run time); only
 // its four blanks change, filled here from the dashboard's settings, every value escaped, in one pass so a value can
 // never fill in another blank. A blank the seller has not filled in says so. No script; a nonce for the one style.
-export const PRIVACY_EMPTY = { ko: "판매자가 아직 입력하지 않았어요", en: "not entered by the seller yet" };
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+export const PRIVACY_EMPTY = { ko: "판매자가 아직 입력하지 않았어요" };
 const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // What fills each blank. The privacy officer is a person: the representative's name, never the business name in its
 // place; while it is empty the page shows the "not entered" mark and the dashboard warns in red.
-export function privacyBlanks(c, lang = "ko") {
+export function privacyBlanks(c) {
   const s = c.seller || {}, p = c.privacy || {}, d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(p.effectiveDate || "");
-  const day = !d ? "" : lang === "en" ? MONTHS[Number(d[2]) - 1] + " " + Number(d[3]) + ", " + d[1] : d[1] + "년 " + Number(d[2]) + "월 " + Number(d[3]) + "일";
+  const day = !d ? "" : d[1] + "년 " + Number(d[2]) + "월 " + Number(d[3]) + "일";
   return { OWNER_NAME: s.rep || "", OWNER_EMAIL: s.email || "", SUPABASE_REGION: p.dbRegion || "", EFFECTIVE_DATE: day };
 }
 // The policy changes with accounts v2 (ACCOUNTS_V2_FROM, src/accounts_gate.js), announced 30 days ahead as the policy in
@@ -849,16 +809,13 @@ export function privacyBlanks(c, lang = "ko") {
 // that links the new one, and ?next=1 the new one dated from the start (the seller's 시행일 does not count yet), saying the
 // policy of now applies until then. From the start: the new one, dated with the seller's 시행일 if it is on or after the
 // start's day, else with that day. Without a valid start there is no date to announce: no box.
-const dayText = (d, lang) => privacyBlanks({ privacy: { effectiveDate: d } }, lang).EFFECTIVE_DATE;
+const dayText = d => privacyBlanks({ privacy: { effectiveDate: d } }).EFFECTIVE_DATE;
 const PRIVACY_NEXT = {
   ko: { box: d => "개인정보 처리방침이 " + d + "에 바뀌어요.", link: "바뀌는 처리방침 미리 보기", now: "지금의 처리방침 보기",
         until: d => d ? "이 처리방침은 " + d + "부터 시행해요. 그때까지는 지금의 개인정보 처리방침이 적용돼요."
                       : "이 처리방침은 아직 시행하지 않아요. 지금은 지금의 개인정보 처리방침이 적용돼요." },
-  en: { box: d => "The privacy policy changes on " + d + ".", link: "Preview the new policy", now: "Read the current policy",
-        until: d => d ? "This policy takes effect on " + d + ". Until then the current privacy policy applies."
-                      : "This policy is not in effect yet. The current privacy policy applies for now." },
 };
-const privacyHref = (next, lang) => "/privacy" + (next ? "?next=1" + (lang === "en" ? "&amp;lang=en" : "") : lang === "en" ? "?lang=en" : "");
+const privacyHref = next => "/privacy" + (next ? "?next=1" : "");
 const withNotice = (page, inner) =>
   page.replace("</style>", ".notice{background:var(--card);border:1px solid var(--accent);border-radius:12px;padding:12px 16px;margin:18px 0}\n</style>")
       .replace("<main>\n", '<main>\n<div class="notice"><p>' + inner + "</p></div>\n");
@@ -889,62 +846,41 @@ const PRIVACY_PRE = {
           ["동의를 거부할 권리", "동의하지 않아도 돼요. 그러면 사전예약을 할 수 없을 뿐, 앱을 받거나 쓰는 데는 영향이 없어요"],
           ["열람 · 삭제 · 동의 철회", "제5조의 방법(웹 /help, 제10조의 메일)으로 언제든 요구할 수 있어요. 신청한 메일 주소로 본인을 확인해요. 수신 거부는 " + PRE_UNSUB_URL + " 에 신청한 메일 주소만 넣으면 바로 돼요(2027년 2월 28일까지). 그 주소의 사전예약 정보를 지우고, 그 뒤로 출시 알림 등 광고성 메일을 보내지 않아요"],
         ] },
-  en: { box: 'If you signed up for pre-registration on the official site, see <a href="#preorder">Separate notice: pre-registration on the official site</a>.',
-        title: "Separate notice: pre-registration on the official site", head: ["Item", "Details"],
-        lead: from => "This notice applies only to people who sign up in the pre-registration window on the official site (doku-web.github.io/SystemBoost). " +
-                      "It applies from " + from + ". It does not change anything else the app or the seller's server processes.",
-        rows: (until, del) => [
-          ["What is processed", "Email address, plan of interest, site language, time of sign-up, time of consent to receive advertising information"],
-          ["Purpose", "To send one launch email. No other mail, and nothing is given to anyone else"],
-          ["How and until when", "Only when the consent box is ticked, until " + until + " (Korean time). 14 or older only"],
-          ["Kept for", "All deleted from the server on " + del + ", or at once on request. Email lists the seller downloads to send the launch email, and the sent copies in the seller's Naver Mail, are deleted that day too. " +
-                    "Deleted records stay up to 30 days in the recovery feature of Cloudflare's database, then go by themselves; it is used only to recover from a failure"],
-          ["Processors and transfer abroad", "Processed and stored by Cloudflare, which runs the seller's server (see Sharing, processors and transfers abroad); Cloudflare chooses the data centre and country. " +
-                                             "The launch email is sent from the seller's Naver Mail account as blind copies, so recipients do not see each other's addresses: NAVER Corporation (Republic of Korea) processes the addresses and the email to send it (as a processor; not a transfer abroad). No other mail service is used. " +
-                                             "If the seller turns it on, a Discord channel only the seller reads gets the number of new sign-ups (by plan and language), never an email address"],
-          ["Abuse limits", "Sign-ups from one place are counted with hashes made from the IP address and its network, such as one company or school (mixed with a value only the server knows), kept up to 1 hour after the last sign-up. The IP address and browser details are not stored"],
-          ["Right to refuse", "You may refuse. You then can't pre-register; downloading and using the app are not affected"],
-          ["Access, deletion, withdrawal", "Ask at any time as under Your rights (web /help or the email under Contact). The email address you signed up with is used to confirm it is you. To unsubscribe, enter that address at " + PRE_UNSUB_URL + " (until February 28, 2027): its pre-registration is deleted at once and no launch or other advertising email is sent to it"],
-        ] },
 };
-function withPreorder(page, lang, env) {
+function withPreorder(page, env) {
   if (!preShown()) return page;
-  const T = PRIVACY_PRE[lang], end = kst(Date.parse(preUntil(env)));
-  const until = dayText(end.slice(0, 10), lang) + (lang === "en" ? ", " : " ") + end.slice(11, 16);
-  const rows = T.rows(until, dayText(kst(Date.parse(PRE.deleteAt)).slice(0, 10), lang))
+  const T = PRIVACY_PRE.ko, end = kst(Date.parse(preUntil(env)));
+  const until = dayText(end.slice(0, 10)) + " " + end.slice(11, 16);
+  const rows = T.rows(until, dayText(kst(Date.parse(PRE.deleteAt)).slice(0, 10)))
     .map(([k, v]) => "<tr><td>" + escHtml(k) + "</td><td>" + escHtml(v) + "</td></tr>").join("");
-  const section = '<section id="preorder">\n<h2>' + escHtml(T.title) + "</h2>\n<p>" + escHtml(T.lead(dayText(PRE_FROM, lang))) + "</p>\n" +
+  const section = '<section id="preorder">\n<h2>' + escHtml(T.title) + "</h2>\n<p>" + escHtml(T.lead(dayText(PRE_FROM))) + "</p>\n" +
     '<div class="tbl"><table><thead><tr><th>' + T.head.join("</th><th>") + "</th></tr></thead><tbody>" + rows + "</tbody></table></div>\n</section>\n";
   return page.replace("</style>", () => PRIVACY_PRE_CSS + "</style>")
     .replace('<nav class="toc"', () => '<div class="prenote" id="preorder-note"><p>' + T.box + '</p></div>\n<nav class="toc"')
     .replace("</main>", () => section + "</main>");
 }
+// Korean only: ?lang=en shows the same Korean page.
 export async function privacyPage(url, env) {
-  const lang = lang2(url.searchParams.get("lang"));
-  const c = await supportConfig(env), v = privacyBlanks(c, lang), T = PRIVACY_NEXT[lang];
+  const c = await supportConfig(env), v = privacyBlanks(c), T = PRIVACY_NEXT.ko;
   const start = accountsV2Day(env), next = url.searchParams.get("next") === "1";
   let page;
   if (accountsV2Open(env)) {
     const own = /^\d{4}-\d{2}-\d{2}$/.test(c.privacy?.effectiveDate || "") ? c.privacy.effectiveDate : "";
-    v.EFFECTIVE_DATE = dayText(own >= start ? own : start, lang);
-    page = PRIVACY_HTML[lang];
+    v.EFFECTIVE_DATE = dayText(own >= start ? own : start);
+    page = PRIVACY_HTML.ko;
   } else if (next) {
-    const day = start && dayText(start, lang);
+    const day = start && dayText(start);
     v.EFFECTIVE_DATE = day;
-    // the other language's link stays on the new policy
-    const other = lang === "en" ? ['<a href="/privacy" hreflang="ko">', '<a href="/privacy?next=1" hreflang="ko">']
-                                : ['<a href="/privacy?lang=en" hreflang="en">', '<a href="/privacy?next=1&amp;lang=en" hreflang="en">'];
-    page = withNotice(PRIVACY_HTML[lang].replace(other[0], other[1]),
-                      escHtml(T.until(day)) + ' <a href="' + privacyHref(false, lang) + '">' + escHtml(T.now) + "</a>");
+    page = withNotice(PRIVACY_HTML.ko, escHtml(T.until(day)) + ' <a href="' + privacyHref(false) + '">' + escHtml(T.now) + "</a>");
   } else {
-    page = !start ? PRIVACY_PREV_HTML[lang]
-         : withNotice(PRIVACY_PREV_HTML[lang], escHtml(T.box(dayText(start, lang))) + ' <a href="' + privacyHref(true, lang) + '">' + escHtml(T.link) + "</a>");
-    page = withPreorder(page, lang, env);
+    page = !start ? PRIVACY_PREV_HTML.ko
+         : withNotice(PRIVACY_PREV_HTML.ko, escHtml(T.box(dayText(start))) + ' <a href="' + privacyHref(true) + '">' + escHtml(T.link) + "</a>");
+    page = withPreorder(page, env);
   }
   const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
   const html = page.replaceAll("__NONCE__", nonce)
     .replace(/\{\{(OWNER_NAME|OWNER_EMAIL|SUPABASE_REGION|EFFECTIVE_DATE)\}\}/g,
-             (_, k) => v[k] ? escHtml(v[k]) : '<span class="blank">' + PRIVACY_EMPTY[lang] + "</span>");
+             (_, k) => v[k] ? escHtml(v[k]) : '<span class="blank">' + PRIVACY_EMPTY.ko + "</span>");
   return new Response(html, { headers: {
     "content-type": "text/html; charset=utf-8", "cache-control": "no-store",
     "content-security-policy": `default-src 'none'; style-src 'nonce-${nonce}'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
@@ -1145,16 +1081,15 @@ export async function supportAdmin(env, route, body, url, h) {
     case "POST /support/deposit": {
       if (!t) return nf;
       if (t.cat !== "deposit" || !ORDER_RE.test(t.order || "")) return { status: 400, error: "입금 확인 문의가 아니에요" };
-      const lang = lang2(t.lang);
       let r, text;
       if (body.action === "approve") {
         r = await h.approveOrder(env, { code: t.order, email: body.email, note: body.note });
-        text = SAY.depositOk[lang](t.order);
+        text = SAY.depositOk.ko(t.order);
       } else if (body.action === "reject") {
         const reason = clean(body.reason);
         if (!reason || chars(reason) > 100) return { status: 400, error: "거절 사유를 1~100자로 적어 주세요. 구매자에게 그대로 보여요" };
         r = await h.rejectOrder(env, { code: t.order, reason });
-        text = SAY.depositNo[lang](reason);
+        text = SAY.depositNo.ko(reason);
       } else return { status: 400, error: "action은 approve 또는 reject예요" };
       if (r.http !== 200) return { ...r.body, status: r.http };
       const replied = say(t, text);   // false: the thread is full (30 messages); the order is decided anyway
@@ -1208,14 +1143,14 @@ async function refundAction(env, t, body, h) {
   if (amount === null) return { status: 400, error: "금액은 0 이상의 정수(원)예요" };
   const message = clean(body.message, true);
   if (chars(message) > LIMITS.text) return { status: 400, error: "메시지는 " + LIMITS.text + "자까지예요" };
-  const lang = lang2(t.lang), code = t.order || r.facts?.order || "", at = now();
+  const code = t.order || r.facts?.order || "", at = now();
   const what = [t.id, code, amount !== undefined ? amount.toLocaleString("en-US") + "원" : ""].filter(Boolean);
 
   if (body.action === "approve") {
     Object.assign(r, { status: "approved", decidedAt: at });
     delete r.rejectReason;
     if (amount !== undefined) r.amount = amount;
-    say(t, message || SAY.approved[lang]);
+    say(t, message || SAY.approved.ko);
     t.status = "answered";
     await save(env, t);
     await h.audit(env, "admin", "환불 승인", what.join(" · "));
@@ -1225,7 +1160,7 @@ async function refundAction(env, t, body, h) {
     const reason = clean(body.reason, true);
     if (!reason || chars(reason) > LIMITS.reason) return { status: 400, error: "거절 사유를 적어 주세요 (" + LIMITS.reason + "자까지, 구매자에게 보여요)" };
     Object.assign(r, { status: "rejected", rejectReason: reason, decidedAt: at });
-    say(t, message || SAY.rejected[lang](reason));
+    say(t, message || SAY.rejected.ko(reason));
     t.status = "answered";
     await save(env, t);
     await h.audit(env, "admin", "환불 거절", [t.id, code, reason].filter(Boolean).join(" · "));
@@ -1279,7 +1214,7 @@ async function refundAction(env, t, body, h) {
   if (amount !== undefined) r.amount = amount;
   if (ids.length) r.revoked = ids;
   if (kept.length) r.kept = kept; else delete r.kept;
-  say(t, message || (ids.length ? SAY.doneKeys[lang] : SAY.done[lang]));
+  say(t, message || (ids.length ? SAY.doneKeys.ko : SAY.done.ko));
   t.status = "answered";
   await save(env, t);
   await h.audit(env, "admin", "환불 완료", [...what, ids.length ? "키 " + ids.join(", ") : "키 그대로", kept.length ? "남긴 키 " + kept.length + "개" : "",
@@ -1318,7 +1253,7 @@ async function closeRefund(env, keyId, h, revoked) {
   if (r.method === "unknown") r.method = "card";
   const code = t.order || f.order || "";
   if (code) { await markRefunded(env, h, await h.getOrder(env, code)); await dropClaims(env, code); }
-  say(t, SAY.card[lang2(t.lang)]);
+  say(t, SAY.card.ko);
   t.status = "answered";
   await save(env, t);
   await feedNote(env, h, null, "card", t);

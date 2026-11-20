@@ -47,7 +47,7 @@ const kid = key => createHash("sha256").update(key).digest("hex").slice(0, 16);
 
 // 1. the category: listed, and it needs an order code of the right shape
 const info = await j("/support/info");
-assert.deepEqual(info.categories.find(c => c.id === "deposit"), { id: "deposit", ko: "입금 확인", en: "Payment sent" });
+assert.deepEqual(info.categories.find(c => c.id === "deposit"), { id: "deposit", ko: "입금 확인" });
 for (const o of [undefined, "", "SB-1234", "SB-AAAA-AAA0", "sb-aaaa"]) {
   const r = await ticket({ cat: "deposit", order: o });
   assert.deepEqual([r.http, r.error], [400, "order"], String(o));
@@ -112,10 +112,11 @@ assert.deepEqual([ap2.http, ap2.error], [409, "이미 승인된 주문이에요"
 s = await adm("/summary");
 assert.ok(!s.deposits.some(d => d.code === A), "an approved order leaves the to-do");
 
-// an English ticket gets the English reply
+// a ticket an older app sent with "lang": "en" gets the Korean reply (Korean only since 0.8.21)
 const tB = await ticket({ cat: "deposit", order: B, lang: "en" });
 const apB = await adm("/support/deposit", { id: tB.id, action: "approve" });
-assert.ok(apB.ticket.messages.at(-1).text.startsWith("We have confirmed your payment and sent the key.") && apB.ticket.messages.at(-1).text.includes(B));
+assert.ok(apB.ticket.messages.at(-1).text.startsWith("입금을 확인했어요. 키를 보냈어요.") && apB.ticket.messages.at(-1).text.includes(B));
+assert.equal(apB.ticket.lang, "ko");
 
 // 5. rejecting needs a reason; it rejects the order and tells the buyer why
 const tC = await ticket({ cat: "deposit", order: C });
@@ -150,9 +151,10 @@ assert.equal(ok.http, 200);
 assert.ok(ok.key);
 
 // 8. the same guide everywhere
-assert.ok(DEPOSIT_GUIDE.ko.includes("24시간은 입금을 알린 때부터예요") && DEPOSIT_GUIDE.en.includes("within 24 hours"));
-assert.ok(DEFAULT_FAQ.ko.some(f => f.a.includes(DEPOSIT_GUIDE.ko)) && DEFAULT_FAQ.en.some(f => f.a.includes(DEPOSIT_GUIDE.en)));
-assert.ok(HELP_HTML.includes(DEPOSIT_GUIDE.ko) && HELP_HTML.includes(DEPOSIT_GUIDE.en), "/help ko and en");
+assert.ok(DEPOSIT_GUIDE.ko.includes("24시간은 입금을 알린 때부터예요"));
+assert.deepEqual(Object.keys(DEPOSIT_GUIDE), ["ko"], "Korean only");
+assert.ok(DEFAULT_FAQ.ko.some(f => f.a.includes(DEPOSIT_GUIDE.ko)));
+assert.ok(HELP_HTML.includes(DEPOSIT_GUIDE.ko), "/help");
 const b64 = o => Buffer.from(JSON.stringify(o)).toString("base64url");
 const { lines } = await purchaseLines(env, b64({ plan: "premium", email: "", issued: "2026-12-10T01:00:00Z" }) + ".sig");
 assert.ok(lines.includes("계좌이체 안내: " + DEPOSIT_GUIDE.ko));
