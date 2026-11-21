@@ -18,9 +18,9 @@ def read(path): return open(path, encoding="utf-8").read()
 
 DC = "https://discord.gg/zUyeV2SJwm"
 # The GitHub repository whose releases the download buttons, the "official downloads" line and the release-notes
-# link point at. It becomes "DOKU-web/SystemBoost-releases" when the release-only repository goes live:
+# link point at. It becomes "Riye-web/SystemBoost-releases" when the release-only repository goes live:
 # change this one line and rebuild.
-RELEASES_REPO = "DOKU-web/SystemBoost"
+RELEASES_REPO = "Riye-web/SystemBoost"
 REL = f"https://github.com/{RELEASES_REPO}/releases"
 # Seller identity in the footer of every page (상호, 대표자, 주소, ...). The page reads it from the licence server when
 # it loads, so no value is written here; fields the server leaves out are not shown, and a failed request shows nothing.
