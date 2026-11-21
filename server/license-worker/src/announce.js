@@ -6,7 +6,7 @@
 
 const HOOKS = "config:discord_hooks", HIST = "announce:hist", KEEP = 50;
 const BOT = "SystemBoost";
-const UA = "DiscordBot (https://github.com/DOKU-web/SystemBoost, 1.0)";
+const UA = "DiscordBot (https://github.com/Riye-web/SystemBoost, 1.0)";
 const HOOK_RE = /^https:\/\/(?:ptb\.|canary\.)?discord(?:app)?\.com\/api(?:\/v\d+)?\/webhooks\/\d+\/[\w-]+$/;
 const MAX_WAIT = 5;   // seconds; Discord can ask for longer than anyone should watch a button for
 

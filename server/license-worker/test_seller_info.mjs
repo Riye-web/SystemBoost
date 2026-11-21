@@ -22,7 +22,7 @@ const env = {
 globalThis.fetch = async url => assert.fail("no network in this test: " + url);
 const call = (path, init = {}) => worker.fetch(new Request("https://lic.example" + path, { ...init, headers: { "CF-Connecting-IP": "10.1.2.3", ...(init.headers || {}) } }), env);
 const setSeller = seller => kv.set("config:support", JSON.stringify({ seller }));
-const SITE = "https://doku-web.github.io";
+const SITE = "https://riye-web.github.io";
 
 // ---- GET /seller
 let r = await call("/seller");
@@ -38,7 +38,7 @@ assert.equal(r.headers.get("cache-control"), "public, max-age=300");
 assert.equal(r.headers.get("content-type"), "application/json");
 setSeller({ name: "N", rep: "R", address: "A", phone: "P", email: "E@x.kr", bizNo: "B", mailOrderNo: "M", hours: "H", extra: "not a field" });
 assert.deepEqual(Object.keys(await (await call("/seller")).json()), ["name", "rep", "address", "phone", "email", "bizNo", "mailOrderNo", "hours"], "the eight fields, in order, nothing else");
-for (const o of ["https://evil.example", "https://doku-web.github.io.evil.example", "null"]) {
+for (const o of ["https://evil.example", "https://riye-web.github.io.evil.example", "null"]) {
   r = await call("/seller", { headers: { Origin: o } });
   assert.equal(r.status, 200, o);
   assert.equal(r.headers.get("access-control-allow-origin"), null, "no CORS for " + o);

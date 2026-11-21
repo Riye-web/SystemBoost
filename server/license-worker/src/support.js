@@ -97,7 +97,7 @@ export const sellerGaps = c => SELLER_REQUIRED.filter(f => !String(c?.seller?.[f
 // GET /seller: the filled-in fields of the seller's details, for the official site and the app (nothing that is not
 // already on /help). CORS for the site's origin only, GET only; cached 300 s.
 const SELLER_PUBLIC = ["name", "rep", "address", "phone", "email", "bizNo", "mailOrderNo", "hours"];
-export const SELLER_ORIGINS = ["https://doku-web.github.io"];
+export const SELLER_ORIGINS = ["https://riye-web.github.io"];
 export async function sellerPublic(req, env) {
   const origin = req.headers.get("Origin") || "";
   const allowed = SELLER_ORIGINS.includes(origin);
@@ -831,7 +831,7 @@ export const PRIVACY_PRE_CSS = ".prenote{background:var(--card);border:1px solid
 const PRIVACY_PRE = {
   ko: { box: '공식 사이트의 사전예약에 신청한 분의 개인정보 처리는 <a href="#preorder">별도 안내: 공식 사이트 사전예약</a>에 적었어요.',
         title: "별도 안내: 공식 사이트 사전예약", head: ["구분", "내용"],
-        lead: from => "이 안내는 공식 사이트(doku-web.github.io/SystemBoost)의 사전예약 창에서 신청한 분에게만 해당해요. " + from +
+        lead: from => "이 안내는 공식 사이트(riye-web.github.io/SystemBoost)의 사전예약 창에서 신청한 분에게만 해당해요. " + from +
                       "부터 적용해요. 앱과 판매자 서버의 다른 개인정보 처리는 이 안내로 바뀌지 않아요.",
         rows: (until, del) => [
           ["처리하는 항목", "메일 주소, 관심 플랜, 사이트 언어, 신청 시각, 광고성 정보 수신 동의 시각"],

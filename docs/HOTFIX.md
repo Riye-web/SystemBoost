@@ -19,8 +19,8 @@ Claude는 커밋과 .cmd까지만 만듭니다.
 - 다운로드 페이지는 바로 전 정식 릴리스를 내려줍니다.
 
 ```
-gh release edit v0.8.15 --prerelease --repo DOKU-web/SystemBoost
-gh release edit v0.8.15 --prerelease --repo DOKU-web/SystemBoost-releases   (새 저장소에도 올렸다면)
+gh release edit v0.8.15 --prerelease --repo Riye-web/SystemBoost
+gh release edit v0.8.15 --prerelease --repo Riye-web/SystemBoost-releases   (새 저장소에도 올렸다면)
 ```
 
 주의

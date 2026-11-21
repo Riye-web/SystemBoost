@@ -45,7 +45,7 @@ globalThis.fetch = async (url, init = {}) => {
   return new Response(postStatus === 204 ? null : "{}", { status: postStatus });
 };
 
-const SITE = "https://doku-web.github.io";
+const SITE = "https://riye-web.github.io";
 let ip = 0;
 const call = (path, init = {}) => worker.fetch(new Request("https://lic.example" + path,
   { ...init, headers: { "CF-Connecting-IP": "10.8." + (++ip & 255) + ".1", ...(init.headers || {}) } }), env);

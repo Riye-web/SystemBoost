@@ -31,7 +31,7 @@ globalThis.fetch = async url => assert.fail("no network in this test: " + url);
 const logged = [];
 for (const k of ["log", "info", "warn", "error", "debug"]) { const orig = console[k]; console[k] = (...a) => { logged.push(a.join(" ")); if (k !== "debug") orig(...a); }; }
 
-const SITE = "https://doku-web.github.io";
+const SITE = "https://riye-web.github.io";
 let ipN = 0;
 const call = (path, init = {}, addr) => worker.fetch(new Request("https://lic.example" + path,
   { ...init, headers: { "CF-Connecting-IP": addr || "10.7." + (++ipN & 255) + ".1", ...(init.headers || {}) } }), env);

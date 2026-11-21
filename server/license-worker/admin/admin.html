@@ -989,7 +989,7 @@ async function askGitHubHere(s) {
   if (DEMO || fresh || Date.now() - githubAsked < 5 * 60e3) return;
   githubAsked = Date.now();
   try {
-    const r = await fetch("https://api.github.com/repos/DOKU-web/SystemBoost/releases?per_page=100");
+    const r = await fetch("https://api.github.com/repos/Riye-web/SystemBoost/releases?per_page=100");
     if (!r.ok) return;
     const releases = (await r.json()).map(x => ({ tag_name: x.tag_name, published_at: x.published_at, draft: x.draft, assets: x.assets.map(a => ({ name: a.name, download_count: a.download_count })) }));
     await api("/downloads", { releases });

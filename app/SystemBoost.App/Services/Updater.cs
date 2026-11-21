@@ -27,8 +27,8 @@ public enum UpdateState { Unsupported, Idle, Checking, UpToDate, Downloading, Re
 
 public static class Updater
 {
-    public const string ReleasesRepo = "https://github.com/DOKU-web/SystemBoost-releases";
-    public const string CodeRepo = "https://github.com/DOKU-web/SystemBoost";
+    public const string ReleasesRepo = "https://github.com/Riye-web/SystemBoost-releases";
+    public const string CodeRepo = "https://github.com/Riye-web/SystemBoost";
 
     private static UpdateManager? _mgr, _oldMgr;
     private static bool _mgrTried;

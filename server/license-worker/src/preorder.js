@@ -45,7 +45,7 @@ export const PRE = {
   perIpHour: 5, perNetHour: 20, perDay: 3000, recent: 100,
   unsubIpHour: 10, unsubNetHour: 30,  // unsubscribe requests an hour per address / per network (as the sign-up's)
   body: 2048,                         // bytes of a POST body read at most; the site's is under 400
-  origins: ["https://doku-web.github.io"],
+  origins: ["https://riye-web.github.io"],
   plans: ["undecided", "free", "premium", "ultra", "biz"],
   langs: ["en", "ko", "ja", "zh", "es", "pt", "ru", "de", "fr"],
   noteWait: 20e3, noteRetry: 10 * 60e3, noteGiveUp: 864e5,

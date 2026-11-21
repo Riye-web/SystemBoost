@@ -26,7 +26,7 @@
 import { PRE, PRE_HOOK, preNoteText } from "./preorder.js";
 import { postText } from "./announce.js";
 
-const REPO = "DOKU-web/SystemBoost";
+const REPO = "Riye-web/SystemBoost";
 const MINUTE = 60e3, HOUR = 36e5, DAY = 864e5;
 const KEEP_DAYS = 90;          // an install silent this long is deleted; the daily totals stay
 const QUIET_MS = 20e3;         // a ping this soon after the last one writes nothing

@@ -30,7 +30,7 @@ const env = {
 };
 globalThis.fetch = async url => assert.fail("no network in this test: " + url);
 
-const SITE = "https://doku-web.github.io";
+const SITE = "https://riye-web.github.io";
 let ip = 0;   // each call from its own /24 unless an address is given (the network limit is tested on its own)
 const call = (path, init = {}, addr) => worker.fetch(new Request("https://lic.example" + path,
   { ...init, headers: { "CF-Connecting-IP": addr || "10.9." + (++ip & 255) + ".1", ...(init.headers || {}) } }), env);
@@ -58,7 +58,7 @@ assert.deepEqual([r.http, r.open, r.until, r.cors], [200, true, PRE.until, "*"])
 let opt = await call("/preorder", { method: "OPTIONS", headers: { Origin: SITE, "Access-Control-Request-Method": "POST" } });
 assert.deepEqual([opt.status, opt.headers.get("access-control-allow-origin"), opt.headers.get("vary")], [204, SITE, "Origin"]);
 assert.match(opt.headers.get("access-control-allow-headers"), /content-type/);
-for (const o of [undefined, "https://evil.example", "https://doku-web.github.io.evil.example"]) {
+for (const o of [undefined, "https://evil.example", "https://riye-web.github.io.evil.example"]) {
   opt = await call("/preorder", { method: "OPTIONS", headers: o ? { Origin: o } : {} });
   assert.deepEqual([opt.status, opt.headers.get("access-control-allow-origin")], [403, null], String(o));
 }
@@ -79,7 +79,7 @@ assert.equal(st.rows("SELECT COUNT(*) AS n FROM counters WHERE name LIKE 'pre:%'
 env.PREORDER_ORIGINS = " http://127.0.0.1:8791 , ";
 assert.equal((await post("{}", { Origin: "http://127.0.0.1:8791" })).error, "consent");
 assert.equal((await post("{}")).error, "origin", "the default is replaced, not added to");
-env.PREORDER_ORIGINS = "http://127.0.0.1:8791, https://doku-web.github.io/";
+env.PREORDER_ORIGINS = "http://127.0.0.1:8791, https://riye-web.github.io/";
 assert.equal((await post("{}")).error, "consent");
 delete env.PREORDER_ORIGINS;
 

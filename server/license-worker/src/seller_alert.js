@@ -9,7 +9,7 @@
 // a slow or failing Discord cannot fail the buyer's request (the caller also runs it in ctx.waitUntil).
 import { DEPOSIT_HOURS, DEPOSIT_WARN_HOURS } from "./support.js";
 
-const UA = "DiscordBot (https://github.com/DOKU-web/SystemBoost, 1.0)";
+const UA = "DiscordBot (https://github.com/Riye-web/SystemBoost, 1.0)";
 export const ALERT_HOOK_RE = /^https:\/\/(?:ptb\.|canary\.)?discord(?:app)?\.com\/api(?:\/v\d+)?\/webhooks\/\d+\/[\w-]+$/;
 const ALERT_TIMEOUT_MS = 5000;
 const MAX_LINES = 20;   // one reminder message; Discord takes 2,000 characters
